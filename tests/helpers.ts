@@ -1,5 +1,5 @@
-// What the plugin's tests share: a project's folder on the disk, a network through plain fetch, and a repository served
-// over http by git's own http-backend, as the real thing is. The app's own tests run the plugin in the app.
+// Shared helpers for the plugin's tests: a project folder on disk, network access through plain fetch, and a repository
+// served over http by git's http-backend, like a real server. The app's own tests run the plugin in the app.
 import { execFileSync, spawn } from 'node:child_process'
 import { constants, promises as fs } from 'node:fs'
 import http from 'node:http'

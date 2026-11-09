@@ -1,4 +1,4 @@
-// Which addresses, branch names and paths from a repository the plugin takes.
+// Which addresses, branch names and repository paths the plugin accepts.
 import { describe, expect, it } from 'vitest'
 import { addressPermission, addressProblem, branchFor, isSsh, safeTreePath, validBranch } from '../plugins/repository/src/address'
 

@@ -1,10 +1,10 @@
 {
   "manifest": {
     "name": "Git repository",
-    "description": "Keeps a version history of your projects as you write, and can back it up to your own git repository (on GitHub, GitLab, Forgejo or your own server) over https, with a user name and an access token. You can also open a project from the repository on another device. It needs no other program. For people who keep their work in git.",
+    "description": "Keeps a version history of your projects in your own git repository.",
     "permissions": {
       "project:folder": "keep a version history in your project’s folder, back it up to the git repository you choose, and open projects from it",
-      "network:ask": "reach the repository you enter"
+      "network:ask": "connect to the repository you enter"
     }
   },
   "messages": {
@@ -13,7 +13,7 @@
     "settings.user.label": "User name",
     "settings.user.description": "Your user name on the server.",
     "settings.token.label": "Access token",
-    "settings.token.description": "An access token from the server, with the right to write to the repository. It’s kept sealed on this device.",
+    "settings.token.description": "An access token from the server, with the right to write to the repository. It stays on this device, encrypted where the system allows it.",
     "settings.signingIn": "Signing in",
     "command.now": "Back up to your repository now",
     "command.book": "Use a separate repository for this book…",
@@ -41,13 +41,13 @@
     "commits.sessionEnd": "Session end · {words} words",
     "commits.start": "History started",
     "commits.beforeSync": "Before syncing",
-    "commits.branch": "Synced on the branch {branch}",
+    "commits.branch": "Syncs on the branch {branch}",
     "commits.merged": "Synced with the repository",
     "fromRepository": "From the repository, {date}",
-    "pushed": "Sent to your repository, as {branch}.",
+    "pushed": "Sent to the branch {branch} in your repository.",
     "failed.push": "Couldn’t send the versions to your repository: {message}",
     "failed.save": "Couldn’t save a version: {message}",
-    "failed.nothingToPush": "There is no history to push yet.",
+    "failed.nothingToPush": "There is no history to send yet.",
     "failed.refused": "Bläck Studio wasn’t allowed to send the history to {url}",
     "failed.signIn": "The repository didn’t accept your sign-in. Check the user name and access token in this plugin’s settings.",
     "failed.notFound": "There’s no repository at that address.",

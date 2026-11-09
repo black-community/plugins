@@ -1,7 +1,7 @@
 /*
  * Which repository addresses the plugin will use. Everything goes over https, with a user name and an access token. Plain http
- * is only for this computer, where nothing travels over a network, and the app's plugin rules allow only that too. There's no
- * SSH on any device, so an SSH address gets a plain message asking for the https one.
+ * is allowed only for localhost, where nothing crosses a network, and the app's plugin rules allow the same. SSH isn't
+ * supported on any device, so an SSH address gets a message asking for the https address.
  */
 
 export type AddressProblem = "ssh" | "http" | "login" | "other";
@@ -28,7 +28,7 @@ export function addressProblem(url: string): AddressProblem | null {
   return null;
 }
 
-/** Returns the permission the app's window asks the writer about for this address. See the app's src/lib/pluginRules.ts. */
+/** Returns the permission the app asks the writer to grant for this address. See the app's src/lib/pluginRules.ts. */
 export const addressPermission = (url: string) => {
   const u = new URL(url.trim());
   return `address:${u.origin}${u.pathname.replace(/\/+$/, "")}`;
@@ -44,7 +44,7 @@ export const validBranch = (branch: string) =>
 
 /**
  * Returns a branch name for a project in the repository shared by all projects. It's the title made safe for git, plus a
- * short random tail so two books with the same title never share a branch. "Fyrvaktarens dotter" → fyrvaktarens-dotter-k3x9qa.
+ * short random suffix so two books with the same title never share a branch. "Fyrvaktarens dotter" → fyrvaktarens-dotter-k3x9qa.
  */
 export function branchFor(title: string): string {
   const slug = title
@@ -63,8 +63,8 @@ export function branchFor(title: string): string {
 export const OWN_BRANCH = "main";
 
 /**
- * Returns whether a path in a commit's tree may become a file in the project. The path comes from a repository anyone with
- * access to it could have written. It isn't allowed outside the folder, inside .git or .sync (however it's spelled
+ * Returns whether a path in a commit's tree may become a file in the project. The path comes from a repository that anyone with
+ * write access could have changed. It isn't allowed outside the folder, inside .git or .sync (however it's spelled
  * on Windows or macOS), or under a name only one system accepts. The app checks every path again when it's written.
  */
 export function safeTreePath(file: unknown): file is string {

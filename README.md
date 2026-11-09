@@ -1,17 +1,15 @@
-# Plugins for Bläck Studio, from the community
+# Community plugins for Bläck Studio
 
-[Bläck Studio](https://blackstudio.app) offers this list by default, under Settings → Plugins → Find plugins. It's
-marked as not official: the people who make Bläck Studio haven't checked what's here.
+[Bläck Studio](https://blackstudio.app) offers this list by default, under Settings → Plugins → Find more.
 
 ```
-plugins/<id>/manifest.json     everything about a plugin but its words
-plugins/<id>/locales/<lang>.json   its words, one file for each language
-plugins/<id>/src/              its source
+plugins/<id>/manifest.json     the plugin manifest
+plugins/<id>/locales/<lang>.json   localization, one file for each language
+plugins/<id>/src/              the plugin's source code
 shared/i18n.ts                 reads the locales
 zips/<id>-<version>.zip        every released version
 plugins.json                   the list the app reads
-sdk/                           the types of the plugin API (from black-extras' packages/black-plugin)
-tests/                         the plugins' tests. tests/perf.bench.ts measures the Git repository plugin (vitest.perf.config.mts)
+tests/                         the plugins' tests. tests/perf.bench.ts benchmarks the Git repository plugin (vitest.perf.config.mts)
 ```
 
 ## Adding or changing a plugin
@@ -24,8 +22,11 @@ npm run verify && npm run check
 npm test          # the plugins' own tests, in tests/
 ```
 
-A version never changes once it's listed: a changed plugin needs a new version. How to write one is in
-[the plugin guide](https://git.thunraz.se/magnus/black-extras/src/branch/master/packages/black-plugin/README.md).
+The plugins are written against the plugin API's types in the npm package
+[`@black-studio/plugin`](https://www.npmjs.com/package/@black-studio/plugin), which `npm install` gets.
+
+A version never changes once it's listed: a changed plugin needs a new version. To write a plugin, see
+[the plugin guide](https://blackstudio.app/developers/).
 
 ## Translating a plugin
 

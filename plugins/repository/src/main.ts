@@ -1,5 +1,5 @@
 import "./polyfill";
-import { Plugin } from "@black/plugin";
+import { Plugin } from "@black-studio/plugin";
 import locales from "black:locales";
 import { translator, type Translate } from "../../../shared/i18n";
 import type en from "../locales/en.json";
@@ -9,10 +9,10 @@ import { commit, fileAt, hasCommits, clone, initRepo, log, makeRepo, remoteBooks
 import { netClient, type NetAccess } from "./http";
 
 /**
- * Keeps a version history of the writer's projects while it's on, backs it up to their own git repository, and opens projects
+ * Keeps a version history of the writer's projects while enabled, backs it up to their own git repository, and opens projects
  * on other devices. Every project has its own branch in a shared repository, or a repository of its own. All of this
  * happens in this plugin, in its worker, with isomorphic-git, so writing never waits for it and no git program is needed. The app
- * gives it the project's folder (app.folder), and draws the list of versions it offers (addVersionHistory).
+ * gives it the project's folder (app.folder), and displays the plugin's list of versions (addVersionHistory).
  */
 
 type Key = keyof typeof en.messages;
@@ -39,12 +39,12 @@ export default class Repository extends Plugin {
   private work: Promise<unknown> = Promise.resolve();
   /** Syncs run one at a time, apart from commits, so a slow network doesn't hold up saving a version. */
   private syncing: Promise<unknown> = Promise.resolve();
-  /** Working out where a sync goes, one at a time, so the first push chooses only one branch. */
+  /** Deciding where a sync goes, one at a time, so the first push chooses only one branch. */
   private preparing: Promise<unknown> = Promise.resolve();
   private last: Status | null = null;
   /** Addresses the writer refused this session. They aren't asked about again until the writer changes the setting. */
   private refused = new Set<string>();
-  /** Whether the writer already heard that backing up fails, so they're told once and not every ten minutes. */
+  /** Whether the writer has been told that backups are failing, so they're told once and not every ten minutes. */
   private failing = false;
 
   async onload() {
@@ -283,8 +283,8 @@ export default class Repository extends Plugin {
     if (!url) return null;
     if (own) return { url, branch: OWN_BRANCH };
     if (settings.branch && validBranch(settings.branch)) return { url, branch: settings.branch };
-    // The first push to the shared repository gives the project a branch, named after it. It keeps that branch whatever
-    // happens to it later: a second book, or a new name.
+    // The first push to the shared repository gives the project a branch named after it. It keeps that branch even if
+    // the project later gets a second book or a new name.
     const info = await this.app.project.info();
     const branch = branchFor(info?.series || info?.title || "");
     await this.saveProjectSettings({ branch });
@@ -294,8 +294,8 @@ export default class Repository extends Plugin {
   }
 
   /**
-   * Asks the writer once for each address, in a window of the app's that no plugin can answer, because every version of the
-   * text goes there, and a project from someone else could name any address. The app enforces the answer in app.net.
+   * Asks the writer once for each address, in an app dialog that no plugin can answer, because every version of the
+   * text is sent there, and a project from someone else could name any address. The app enforces the answer in app.net.
    */
   private async allowed(url: string, askAgain = false) {
     if (this.refused.has(url) && !askAgain) return false;
@@ -314,7 +314,7 @@ export default class Repository extends Plugin {
     };
   }
 
-  /** Puts what went wrong in the writer's words where there are some. Anything else is what the server or the system said. */
+  /** Returns a message for the writer where one exists. Otherwise, returns the server's or system's own error message. */
   private describe(err: unknown) {
     const e = err as { code?: string; message?: string; data?: { statusCode?: number } };
     if (e?.message === "not-a-folder") return this.t("failed.notAFolder");
@@ -327,7 +327,7 @@ export default class Repository extends Plugin {
 
   /**
    * Syncs the open project with its repository, if it has one. Quiet unless `loud`. Syncs run one at a time, so a second one sees
-   * what the first did. What to sync is settled here and now, because the project may have closed by the sync's turn.
+   * what the first did. What to sync is decided right away, because the project may have closed by the sync's turn.
    */
   private backUp(opts: { loud?: boolean; commit?: boolean } = {}) {
     const prepared = this.preparing.catch(() => undefined).then(async () => {

@@ -1,7 +1,7 @@
 /*
- * Syncs a book between devices. It merges the book's files as they were
- * when the two sides last agreed (base), as they are on this device (ours), and as they are
- * in the repository (theirs). It never touches a disk.
+ * Syncs a book between devices with a three-way merge of the book's files: the common
+ * ancestor (base), this device's version (ours) and the repository's version (theirs).
+ * It never touches the disk.
  *
  * Whatever only one side changed is taken from that side. Where both changed:
  * - a book's or project's file (book.json, project.json) is merged key by
@@ -15,9 +15,9 @@
  * documents also in their snapshots.
  */
 
-/** Returns whether a path in a repository is a book's manifest, in whichever book. */
+/** Returns whether a path in a repository is a book's manifest, in any book. */
 const isBookFilePath = (p: string) => p === 'book.json' || p.endsWith('/book.json')
-/** Returns whether a path in a repository is a project's file. It's only ever at the top. */
+/** Returns whether a path in a repository is a project's file. It's always at the top level. */
 const isProjectFilePath = (p: string) => p === 'project.json'
 
 export type Files = Map<string, Uint8Array>

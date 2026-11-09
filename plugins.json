@@ -3,7 +3,7 @@
   "plugins": [
     {
       "id": "repository",
-      "version": "1.1.0",
+      "version": "1.1.1",
       "author": "Bläck",
       "apiVersion": 10,
       "sandboxed": true,
@@ -15,25 +15,25 @@
       ],
       "category": "other",
       "name": "Git repository",
-      "description": "Keeps a version history of your projects as you write, and can back it up to your own git repository (on GitHub, GitLab, Forgejo or your own server) over https, with a user name and an access token. You can also open a project from the repository on another device. It needs no other program. For people who keep their work in git.",
+      "description": "Keeps a version history of your projects in your own git repository.",
       "permissionReasons": {
         "project:folder": {
           "en": "keep a version history in your project’s folder, back it up to the git repository you choose, and open projects from it",
           "sv": "spara en versionshistorik i projektets mapp, säkerhetskopiera den till git-förrådet du väljer och öppna projekt därifrån"
         },
         "network:ask": {
-          "en": "reach the repository you enter",
-          "sv": "nå förrådet som du anger"
+          "en": "connect to the repository you enter",
+          "sv": "ansluta till förrådet som du anger"
         }
       },
       "locales": {
         "sv": {
           "name": "Git-förråd",
-          "description": "Sparar en versionshistorik för dina projekt medan du skriver och kan säkerhetskopiera den till ditt eget git-förråd (på GitHub, GitLab, Forgejo eller en egen server) över https, med ett användarnamn och en åtkomsttoken. Du kan också öppna ett projekt från förrådet på en annan enhet. Inget annat program behövs. För dig som har ditt arbete i git."
+          "description": "Sparar en versionshistorik för dina projekt i ditt eget git-förråd."
         }
       },
-      "download": "https://raw.githubusercontent.com/black-community/plugins/main/zips/repository-1.1.0.zip",
-      "sha256": "609b65340773121deeefe3797373152feb66571dfc8180401978e9a94f57095d"
+      "download": "https://raw.githubusercontent.com/black-community/plugins/main/zips/repository-1.1.1.zip",
+      "sha256": "cd21f9bc777776f7f32df4ef1daa1e6a920ef6ca7b8d5c4efbc041db61ec5748"
     }
   ]
 }

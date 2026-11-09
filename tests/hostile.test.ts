@@ -1,4 +1,4 @@
-// A book from someone else, with a .git folder made to do harm. The system's git would run what's named in here.
+// A book from someone else, with a malicious .git folder. The system's git would run the commands it names.
 // The plugin has no way to run anything, and these tests prove that nothing runs and nothing outside the project is touched.
 import { afterAll, beforeAll, describe, expect, it } from 'vitest'
 import { promises as fs } from 'node:fs'
