@@ -21,8 +21,11 @@ export interface TabContext {
   /** The world's calendar, and the dialog to set it up. */
   calendar(): Promise<WorldCalendar | null>;
   editCalendar(): void;
-  /** Shows a map larger, in a dialog. */
+  /** Shows a map in the Map view. */
   openMap(mapId: string): void;
+  /** The map the Map view shows, and choosing another there. */
+  currentMap(): string;
+  showMap(mapId: string): void;
   /** Sharing entries with the series, whose bible shows them. */
   sharing: {
     inSeries(): Promise<boolean>;
@@ -160,7 +163,7 @@ export function WorldTab({ nodeId, context }: { nodeId: string; context: TabCont
         <>
           <MapBoard mapId={nodeId} context={context} />
           <button className="link-btn" onClick={() => context.openMap(nodeId)}>
-            {t("map.large")}
+            {t("map.open")}
           </button>
         </>
       )}

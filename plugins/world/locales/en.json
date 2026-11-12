@@ -121,7 +121,6 @@
     "map.pin": "Pin",
     "map.cancel": "Cancel",
     "map.remove": "Remove pin",
-    "map.large": "Show it larger",
     "map.onMaps": "On maps",
     "calendar.tab": "Calendar",
     "calendar.entries": "Entries",
@@ -139,6 +138,11 @@
     "calendar.badMonths": "Write at least one month, with its number of days.",
     "check.name": "World",
     "check.banned": "{name} is in “{scene}”, set where {group} is banned: {place}.",
-    "check.loop": "{name} is located inside itself, through “Located in”."
+    "check.loop": "{name} is located inside itself, through “Located in”.",
+    "map.open": "Open in the Map view",
+    "mapView.name": "Map",
+    "mapView.choose": "Which map",
+    "mapView.sheet": "Its sheet",
+    "mapView.none": "No maps yet. Right-click Maps under World in the navigator to add one, then give it a picture on its Sheet tab."
   }
 }

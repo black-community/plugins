@@ -254,7 +254,7 @@ describe('maps', () => {
   it('keep pins by id, on the picture, and know which maps an item is on', () => {
     const map = addPin(addPin({ other: 1 }, { x: 0.5, y: 0.25, to: 'guild' }, 'p1'), { x: 2, y: -1, to: 'bristol' }, 'p2')
     expect(readPins(map)).toEqual({ p1: { x: 0.5, y: 0.25, to: 'guild' }, p2: { x: 1, y: 0, to: 'bristol' } })
-    expect(map.other).toBe(1)
+    expect((map as Record<string, unknown>).other).toBe(1)
     expect(mapsWith('guild', { m1: map, m2: {} })).toEqual(['m1'])
     expect(readPins(removePin(map, 'p1'))).toEqual({ p2: { x: 1, y: 0, to: 'bristol' } })
     expect(readPins({ pins: { bad: { x: 'a', to: 'x' } } })).toEqual({})

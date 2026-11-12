@@ -105,6 +105,9 @@
 /* A map and its pins. A pin's place is a share of the picture's width and height, so it stays put at any size. */
 .world-map-frame {
   position: relative;
+  /* As big as its picture, so a pin's share of the width and height lands on the picture. */
+  display: inline-block;
+  max-width: 100%;
   cursor: crosshair;
   margin: 6px 0;
   border: 1px solid var(--border);
@@ -113,14 +116,32 @@
   line-height: 0;
 }
 .world-map-frame img {
-  width: 100%;
-  height: auto;
   display: block;
+  max-width: 100%;
+  height: auto;
   user-select: none;
 }
+/* The Map view: the map as large as the view allows. */
+.world-map-view {
+  padding: 16px 20px 24px;
+  height: 100%;
+  box-sizing: border-box;
+  overflow: auto;
+}
+.world-map-view .world-view-bar {
+  align-items: center;
+}
+.world-map-view h2 {
+  margin: 0;
+  font-size: 18px;
+  flex: 1;
+}
 .world-map.large .world-map-frame img {
-  max-height: 70vh;
-  object-fit: contain;
+  max-height: calc(100vh - 220px);
+  width: auto;
+}
+.world-map.large .world-pin-label {
+  font-size: 13px;
 }
 .world-pin {
   position: absolute;

@@ -121,7 +121,6 @@
     "map.pin": "Nåla fast",
     "map.cancel": "Avbryt",
     "map.remove": "Ta bort nålen",
-    "map.large": "Visa den större",
     "map.onMaps": "På kartor",
     "calendar.tab": "Kalender",
     "calendar.entries": "Poster",
@@ -139,6 +138,11 @@
     "calendar.badMonths": "Skriv minst en månad, med dess antal dagar.",
     "check.name": "Världen",
     "check.banned": "{name} är med i ”{scene}”, som utspelar sig där {group} är bannlyst: {place}.",
-    "check.loop": "{name} ligger i sig själv, genom ”Ligger i”."
+    "check.loop": "{name} ligger i sig själv, genom ”Ligger i”.",
+    "map.open": "Öppna i kartvyn",
+    "mapView.name": "Karta",
+    "mapView.choose": "Vilken karta",
+    "mapView.sheet": "Dess profil",
+    "mapView.none": "Inga kartor än. Högerklicka på Kartor under Världen i navigatorn för att lägga till en, och ge den sedan en bild under fliken Profil."
   }
 }

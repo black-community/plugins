@@ -13,7 +13,7 @@ import { WorldView } from "./view";
 import { KindsPicker } from "./kindsPicker";
 import { CalendarDialog } from "./calendarView";
 import { readCalendar, type WorldCalendar } from "./calendar";
-import { MapBoard } from "./mapBoard";
+import { MapView } from "./mapView";
 import { worldChecks } from "./checks";
 
 /** The World view's icon: a globe, drawn like the app's own icons. */
@@ -24,6 +24,16 @@ const GlobeIcon = ({ size = 16 }: { size?: number }) =>
     createElement("circle", { cx: 12, cy: 12, r: 10 }),
     createElement("path", { d: "M12 2a14.5 14.5 0 0 0 0 20 14.5 14.5 0 0 0 0-20" }),
     createElement("path", { d: "M2 12h20" }),
+  );
+
+/** The Map view's icon: a folded map, drawn like the app's own icons. */
+const MapIcon = ({ size = 16 }: { size?: number }) =>
+  createElement(
+    "svg",
+    { width: size, height: size, viewBox: "0 0 24 24", fill: "none", stroke: "currentColor", strokeWidth: 1.9, strokeLinecap: "round", strokeLinejoin: "round", "aria-hidden": true },
+    createElement("path", { d: "M14.1 5.4 9.9 3.3a2 2 0 0 0-1.8 0L3.6 5.6A1 1 0 0 0 3 6.5v13a1 1 0 0 0 1.4.9l3.7-1.8a2 2 0 0 1 1.8 0l4.2 2.1a2 2 0 0 0 1.8 0l4.5-2.3a1 1 0 0 0 .6-.9v-13a1 1 0 0 0-1.4-.9l-3.7 1.8a2 2 0 0 1-1.8 0z" }),
+    createElement("path", { d: "M15 5.8v15" }),
+    createElement("path", { d: "M9 3.2v15" }),
   );
 
 /** An entry, as the marks in the text and the suggestions need it. */
@@ -50,6 +60,8 @@ export default class World extends Plugin {
   private indexing: Promise<void> | null = null;
   /** The glossary's words already given to the book's dictionary, so they're only given once. */
   private taught = new Set<string>();
+  /** The map the Map view shows: the last one opened. */
+  private shownMap = "";
 
   async onload() {
     this.t = translator<Key>(locales, this.app.language);
@@ -85,7 +97,15 @@ export default class World extends Plugin {
       kindsOff: () => this.kindsOff(),
       calendar: async () => readCalendar(await this.app.project.getSharedData?.().catch(() => undefined)),
       editCalendar: () => void this.editCalendar(),
-      openMap: (mapId) => void this.openMap(mapId, context),
+      openMap: (mapId) => {
+        this.shownMap = mapId;
+        this.app.ui.openView("map");
+        this.watchers.forEach((w) => w());
+      },
+      currentMap: () => this.shownMap,
+      showMap: (mapId) => {
+        this.shownMap = mapId;
+      },
       sharing: {
         inSeries: async () => !!(await this.app.project.info())?.series,
         isShared: async (id) => readShared(await this.app.project.getSharedData?.()).entries.some((e) => e.id === id),
@@ -99,6 +119,7 @@ export default class World extends Plugin {
       render: (nodeId) => createElement(WorldTab, { key: nodeId, nodeId, context }),
     });
     this.addView({ id: "world", name: t("view.name"), icon: GlobeIcon, render: () => createElement(WorldView, { context }) });
+    this.addView({ id: "map", name: t("mapView.name"), icon: MapIcon, render: () => createElement(MapView, { context }) });
 
     // The entries' names in the text, with what each is. Its menu opens the entry.
     this.addHighlighter({
@@ -313,12 +334,6 @@ export default class World extends Plugin {
           },
         }),
     });
-  }
-
-  /** Shows a map larger, in a dialog. */
-  private async openMap(mapId: string, context: TabContext) {
-    const node = await this.app.project.node(mapId);
-    this.app.ui.openModal({ title: node?.title ?? this.t("kind.map.name"), wide: true, render: () => createElement(MapBoard, { mapId, context, large: true }) });
   }
 
   /** Changes World's shared data: reads it, changes it, and writes it, once more if it changed meanwhile. */
