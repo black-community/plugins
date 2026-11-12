@@ -34,6 +34,33 @@
       },
       "download": "https://raw.githubusercontent.com/black-community/plugins/main/zips/repository-1.1.0.zip",
       "sha256": "609b65340773121deeefe3797373152feb66571dfc8180401978e9a94f57095d"
+    },
+    {
+      "id": "world",
+      "version": "1.0.0",
+      "author": "Bläck",
+      "apiVersion": 12,
+      "sandboxed": false,
+      "permissions": [
+        "project:write"
+      ],
+      "category": "planning",
+      "name": "World",
+      "description": "Keeps your world beside your story: factions, cultures, religions, creatures, artifacts, magic and languages, each with a sheet of its own in a World section of the navigator. Everything is kept in the book, so your co-authors see it too.",
+      "permissionReasons": {
+        "project:write": {
+          "en": "keep your world’s entries in the book",
+          "sv": "spara din världs poster i boken"
+        }
+      },
+      "locales": {
+        "sv": {
+          "name": "Världen",
+          "description": "Håller din värld bredvid berättelsen: fraktioner, kulturer, religioner, varelser, artefakter, magi och språk, var och en med en egen profil i en Världen-del i navigatorn. Allt sparas i boken, så dina medförfattare ser det också."
+        }
+      },
+      "download": "https://raw.githubusercontent.com/black-community/plugins/main/zips/world-1.0.0.zip",
+      "sha256": "86b3606bf7d3774825d910aa662d17a3e2e8c73c8bbfc12a81c0af3b28be9c12"
     }
   ]
 }
