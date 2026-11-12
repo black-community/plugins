@@ -11,6 +11,7 @@
   },
   "devDependencies": {
     "@types/node": "^26.6.6",
+    "@types/react": "^19.3.0",
     "jszip": "^3.10.2",
     "rolldown": "~1.2.12",
     "typescript": "^7.0.2",

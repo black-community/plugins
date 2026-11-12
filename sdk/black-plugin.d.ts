@@ -845,7 +845,8 @@ export declare class Plugin {
   addInspectorTab(tab: {
     id: string
     name: string | ((nodeId: string) => string)
-    when?: (nodeId: string, node: { type: NodeType; title: string }) => boolean
+    /** Whether the tab is for this item. `kind` is an entry's kind, "<plugin id>:<kind id>" (API 12). */
+    when?: (nodeId: string, node: { type: NodeType; title: string; kind?: string }) => boolean
     render: (nodeId: string) => ReactNode
   }): () => void
   /** Adds a status bar item. Either draw it with `render` (window only), or give it `text` and change that with setText, which also works in a sandboxed plugin. */

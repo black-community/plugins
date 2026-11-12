@@ -14,7 +14,8 @@
     },
     "types": [
       "node"
-    ]
+    ],
+    "jsx": "react-jsx"
   },
   "include": [
     "plugins",
