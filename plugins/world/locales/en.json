@@ -77,6 +77,20 @@
     "link.madeBy.out": "Made by",
     "link.madeBy.in": "Made",
     "link.worships.out": "Worships",
-    "link.worships.in": "Worshipped by"
+    "link.worships.in": "Worshipped by",
+    "tab.otherNames": "Other names",
+    "tab.otherNamesHint": "Separated by commas",
+    "tab.mentioned": "Mentioned in",
+    "tab.reading": "Reading the scenes…",
+    "tab.notMentioned": "Not mentioned in a scene yet.",
+    "view.name": "World",
+    "view.search": "Search the world",
+    "view.linkedTo": "Linked to",
+    "view.anyLink": "Linked to anything",
+    "view.linkedToItem": "Linked to {name}",
+    "view.empty": "Nothing in your world yet. Right-click World in the navigator to add a faction, a culture or anything else.",
+    "view.noMatch": "Nothing matches.",
+    "mention.message": "{name}: {kind}",
+    "mention.open": "Open {name}"
   }
 }

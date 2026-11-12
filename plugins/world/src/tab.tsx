@@ -2,7 +2,8 @@ import type { App, NodeInfo } from "@black/plugin";
 import { useEffect, useState } from "react";
 import type { Translate } from "../../../shared/i18n";
 import { KINDS, type Key } from "./kinds";
-import { addLink, LINK_TYPES, linksOf, removeLink, type LinkType, type SeenLink } from "./links";
+import { addLink, LINK_TYPES, linksOf, namesOf, removeLink, setNames, type LinkType, type SeenLink } from "./links";
+import { mentionFinder, otherNames } from "./mentions";
 
 /** What the tab needs from the plugin: the app, its words in the writer's language, and word of changes. */
 export interface TabContext {
@@ -23,6 +24,10 @@ export function WorldTab({ nodeId, context }: { nodeId: string; context: TabCont
   const [all, setAll] = useState<Record<string, unknown>>({});
   const [type, setType] = useState<LinkType>("memberOf");
   const [to, setTo] = useState("");
+  /** The other names as the writer is typing them, saved when they leave the field. */
+  const [names, setNamesText] = useState<string | null>(null);
+  /** The scenes that mention this entry, once they've been read. */
+  const [mentioned, setMentioned] = useState<{ id: string; title: string }[] | null>(null);
 
   useEffect(() => {
     let live = true;
@@ -42,6 +47,28 @@ export function WorldTab({ nodeId, context }: { nodeId: string; context: TabCont
   }, [nodeId]);
 
   const byId = new Map(nodes.map((n) => [n.id, n]));
+  const node = byId.get(nodeId);
+  const isEntry = node?.type === "entry";
+  const savedNames = namesOf(all[nodeId]);
+  const lookFor = isEntry ? [node!.title, ...otherNames(savedNames)].join("\n") : "";
+
+  // The scenes that mention it: read again when its names change.
+  useEffect(() => {
+    if (!lookFor) return setMentioned(null);
+    let live = true;
+    void (async () => {
+      const find = mentionFinder(lookFor.split("\n").map((name) => ({ name, entry: nodeId })));
+      const found: { id: string; title: string }[] = [];
+      for (const id of await app.project.manuscript()) {
+        if (find(await app.project.readText(id)).length) found.push({ id, title: byId.get(id)?.title ?? "" });
+        if (!live) return;
+      }
+      setMentioned(found);
+    })();
+    return () => {
+      live = false;
+    };
+  }, [nodeId, lookFor]);
   const shown = (id: string) => !!byId.get(id) && !byId.get(id)!.inTrash;
   const links = linksOf(nodeId, all, shown).sort((a, b) => t(a.label).localeCompare(t(b.label)) || title(a).localeCompare(title(b)));
   function title(l: SeenLink) {
@@ -75,6 +102,21 @@ export function WorldTab({ nodeId, context }: { nodeId: string; context: TabCont
 
   return (
     <div className="insp-section world-tab">
+      {isEntry && (
+        <div className="field">
+          <label htmlFor="world-names">{t("tab.otherNames")}</label>
+          <input
+            id="world-names"
+            className="input selectable"
+            placeholder={t("tab.otherNamesHint")}
+            value={names ?? savedNames}
+            onChange={(e) => setNamesText(e.target.value)}
+            onBlur={() => {
+              if (names !== null && names !== savedNames) void change(nodeId, (cur) => setNames(cur, names)).then(() => setNamesText(null));
+            }}
+          />
+        </div>
+      )}
       <span className="field-label">{t("tab.links")}</span>
       {links.length === 0 && <p className="insp-hint">{t("tab.none")}</p>}
       {links.map((l) => (
@@ -120,6 +162,22 @@ export function WorldTab({ nodeId, context }: { nodeId: string; context: TabCont
             {t("tab.add")}
           </button>
         </form>
+      )}
+      {isEntry && (
+        <>
+          <span className="field-label">{t("tab.mentioned")}</span>
+          {mentioned === null ? (
+            <p className="insp-hint">{t("tab.reading")}</p>
+          ) : mentioned.length === 0 ? (
+            <p className="insp-hint">{t("tab.notMentioned")}</p>
+          ) : (
+            mentioned.map((s) => (
+              <button key={s.id} className="insp-link-row world-mention" onClick={() => void app.project.select(s.id)}>
+                <span className="ilr-title">{s.title}</span>
+              </button>
+            ))
+          )}
+        </>
       )}
     </div>
   );

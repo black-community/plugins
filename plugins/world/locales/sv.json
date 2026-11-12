@@ -77,6 +77,20 @@
     "link.madeBy.out": "Gjord av",
     "link.madeBy.in": "Har gjort",
     "link.worships.out": "Dyrkar",
-    "link.worships.in": "Dyrkas av"
+    "link.worships.in": "Dyrkas av",
+    "tab.otherNames": "Andra namn",
+    "tab.otherNamesHint": "Åtskilda av kommatecken",
+    "tab.mentioned": "Nämns i",
+    "tab.reading": "Läser scenerna…",
+    "tab.notMentioned": "Nämns inte i någon scen än.",
+    "view.name": "Världen",
+    "view.search": "Sök i världen",
+    "view.linkedTo": "Kopplad till",
+    "view.anyLink": "Kopplad till vad som helst",
+    "view.linkedToItem": "Kopplad till {name}",
+    "view.empty": "Inget i din värld än. Högerklicka på Världen i navigatorn för att lägga till en fraktion, en kultur eller något annat.",
+    "view.noMatch": "Inget matchar.",
+    "mention.message": "{name}: {kind}",
+    "mention.open": "Öppna {name}"
   }
 }

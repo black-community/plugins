@@ -4,7 +4,8 @@ import { translator } from '../shared/i18n'
 import { KINDS, kindDefinitions, type Key } from '../plugins/world/src/kinds'
 import en from '../plugins/world/locales/en.json'
 import sv from '../plugins/world/locales/sv.json'
-import { addLink, LINK_TYPES, linksOf, readItem, removeLink } from '../plugins/world/src/links'
+import { addLink, LINK_TYPES, linksOf, namesOf, readItem, removeLink, setNames } from '../plugins/world/src/links'
+import { mentionFinder, otherNames } from '../plugins/world/src/mentions'
 
 const locales = { en: en.messages, sv: sv.messages } as Record<string, Record<string, string>>
 /** The rule the app checks a kind's and a section's ids against (src/lib/kinds.ts, KIND_ID). */
@@ -92,5 +93,50 @@ describe('links between things in the world', () => {
       expect(en.messages[key as keyof typeof en.messages], key).toBeTruthy()
       expect(sv.messages[key as keyof typeof sv.messages], key).toBeTruthy()
     }
+  })
+})
+
+describe('mentions of things in the world', () => {
+  const find = mentionFinder([
+    { name: 'The Guild', entry: 'guild' },
+    { name: 'Guild', entry: 'guild' },
+    { name: 'The Iron Guild', entry: 'iron' },
+    { name: 'Ödemarken', entry: 'waste' },
+    { name: 'Ama', entry: 'ama' },
+    { name: 'x', entry: 'too-short' },
+  ])
+  const words = (text: string) => find(text).map((m) => [text.slice(m.from, m.to), m.entry])
+
+  it('are found as whole words, whatever their case, with the longest name first', () => {
+    expect(words('The Iron Guild met the Guild.')).toEqual([
+      ['The Iron Guild', 'iron'],
+      ['the Guild', 'guild'],
+    ])
+    expect(words('Guildhall and Amalia aren’t mentions.')).toEqual([])
+  })
+
+  it('include the genitive, in English and Swedish', () => {
+    expect(words('the Guild’s seal')).toEqual([['the Guild', 'guild']])
+    expect(words('Amas svärd och Ödemarkens sand')).toEqual([
+      ['Amas', 'ama'],
+      ['Ödemarkens', 'waste'],
+    ])
+  })
+
+  it('count å, ä and ö as letters, so they don’t end a word', () => {
+    expect(words('Amaä och Ödemarkenå')).toEqual([])
+  })
+
+  it('come from an entry’s other names too, as the writer typed them', () => {
+    expect(otherNames('The Hand, Iron Hand; x\n  Gillet ')).toEqual(['The Hand', 'Iron Hand', 'Gillet'])
+    const names = mentionFinder(otherNames('The Hand, Gillet').map((name) => ({ name, entry: 'guild' })))
+    expect(names('Gillets folk och the hand').map((m) => m.entry)).toEqual(['guild', 'guild'])
+  })
+
+  it('are kept with the item’s other data', () => {
+    const data = setNames({ links: { l1: { type: 'rules', to: 'b' } } }, 'The Hand')
+    expect(namesOf(data)).toBe('The Hand')
+    expect(data.links).toEqual({ l1: { type: 'rules', to: 'b' } })
+    expect(namesOf(undefined)).toBe('')
   })
 })

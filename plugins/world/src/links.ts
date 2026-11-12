@@ -28,6 +28,8 @@ export interface Link {
 /** What World keeps with one item. Anything else in it, from a later version, is kept as it is. */
 export interface ItemWorld {
   links?: Record<string, Link>;
+  /** The entry's other names, as the writer typed them: separated by commas (mentions.ts, otherNames). */
+  names?: string;
   [other: string]: unknown;
 }
 
@@ -95,3 +97,15 @@ export function linksOf(id: string, all: Record<string, unknown>, exists: (id: s
   }
   return out;
 }
+
+/** Returns the item's data with its other names set, as the writer typed them. Everything else in it is kept. */
+export function setNames(current: unknown, text: string): ItemWorld {
+  const item = current && typeof current === "object" && !Array.isArray(current) ? (current as ItemWorld) : {};
+  return { ...item, names: text };
+}
+
+/** Returns an item's other names text, or '' if it has none. */
+export const namesOf = (value: unknown) => {
+  const names = value && typeof value === "object" ? (value as ItemWorld).names : undefined;
+  return typeof names === "string" ? names : "";
+};
