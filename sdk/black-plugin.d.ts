@@ -325,6 +325,11 @@ export interface App {
      */
     getData(): Promise<unknown>
     setData(value: unknown): Promise<void>
+    /**
+     * Adds words to the book's spelling dictionary, so they aren't marked as misspelt: single words, without spaces.
+     * Words already there are left. Returns how many were new. Needs "project:write". API 12.
+     */
+    addToDictionary?(words: string[]): Promise<number>
     /** This plugin's data for one item, or undefined. API 11: check that it exists. */
     getItemData?(id: string): Promise<unknown>
     /**

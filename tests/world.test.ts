@@ -6,15 +6,18 @@ import en from '../plugins/world/locales/en.json'
 import sv from '../plugins/world/locales/sv.json'
 import { addLink, LINK_TYPES, linksOf, namesOf, readItem, removeLink, setNames } from '../plugins/world/src/links'
 import { mentionFinder, otherNames } from '../plugins/world/src/mentions'
+import { glossaryWords } from '../plugins/world/src/glossary'
+import { bibleHtml, bibleMarkdown, type BibleInput } from '../plugins/world/src/bible'
+import { readShared, withCopies } from '../plugins/world/src/sharing'
 
 const locales = { en: en.messages, sv: sv.messages } as Record<string, Record<string, string>>
 /** The rule the app checks a kind's and a section's ids against (src/lib/kinds.ts, KIND_ID). */
 const KIND_ID = /^[a-z0-9][a-z0-9-]{0,39}$/
 
 describe('World’s kinds', () => {
-  it('are the plan’s seven, with valid ids, in one World section', () => {
+  it('are the plan’s seven and the glossary’s terms, with valid ids, in one World section', () => {
     const kinds = kindDefinitions(translator<Key>(locales, 'en'))
-    expect(kinds.map((k) => k.name)).toEqual(['Faction', 'Culture', 'Religion', 'Creature', 'Artifact', 'Magic', 'Language'])
+    expect(kinds.map((k) => k.name)).toEqual(['Faction', 'Culture', 'Religion', 'Creature', 'Artifact', 'Magic', 'Term', 'Language'])
     for (const k of kinds) {
       expect(k.id).toMatch(KIND_ID)
       expect(k.section).toEqual({ id: 'world', name: 'World' })
@@ -138,5 +141,80 @@ describe('mentions of things in the world', () => {
     expect(namesOf(data)).toBe('The Hand')
     expect(data.links).toEqual({ l1: { type: 'rules', to: 'b' } })
     expect(namesOf(undefined)).toBe('')
+  })
+})
+
+describe('the glossary', () => {
+  it('gives each word of its terms’ names to the dictionary once', () => {
+    expect(glossaryWords(['Ödemark', 'the Iron-hand', 'Kel’tar sword', 'a', 'Ödemark'])).toEqual(['Iron-hand', 'Kel’tar', 'Ödemark', 'sword', 'the'])
+  })
+})
+
+describe('the world bible', () => {
+  const input: BibleInput = {
+    title: 'Saga *one*',
+    kinds: [
+      {
+        plural: 'Factions',
+        entries: [
+          {
+            title: 'The <Iron> Guild',
+            names: 'Gillet',
+            synopsis: 'Merchants',
+            fields: [['Leader', 'Ama']],
+            links: [{ label: 'Members', other: 'Jim' }],
+            text: 'First line.\n\nSecond line.',
+          },
+        ],
+      },
+      { plural: 'Cultures', entries: [] },
+    ],
+    words: { otherNames: 'Other names', links: 'Links', empty: 'Nothing yet.' },
+  }
+
+  it('is Markdown, kind by kind, with what Markdown would read escaped', () => {
+    const md = bibleMarkdown(input)
+    expect(md).toContain('# Saga \\*one\\*')
+    expect(md).toContain('## Factions')
+    expect(md).not.toContain('## Cultures')
+    expect(md).toContain('### The \\<Iron\\> Guild')
+    expect(md).toContain('- **Leader:** Ama')
+    expect(md).toContain('- Members: Jim')
+    expect(md).toContain('Second line.')
+  })
+
+  it('is a whole HTML page, with everything escaped', () => {
+    const html = bibleHtml(input, 'sv')
+    expect(html).toContain('<html lang="sv">')
+    expect(html).toContain('<h3>The &lt;Iron&gt; Guild</h3>')
+    expect(html).toContain('<dt>Leader</dt><dd>Ama</dd>')
+    expect(html).not.toContain('<Iron>')
+  })
+
+  it('says so when the world is empty', () => {
+    expect(bibleMarkdown({ ...input, kinds: [] })).toContain('Nothing yet.')
+  })
+})
+
+describe('entries shared with the series', () => {
+  const guild = { id: 'g1', kind: 'faction', title: 'The Guild', synopsis: '', fields: {} }
+
+  it('are added, updated and removed, keeping other books’ copies and anything else', () => {
+    const start = { entries: [guild, { ...guild, id: 'other-book' }], settings: { x: 1 } }
+    const renamed = withCopies(start, new Map([['g1', { ...guild, title: 'The Iron Guild' }]]))!
+    expect(readShared(renamed).entries.map((e) => [e.id, e.title])).toEqual([
+      ['g1', 'The Iron Guild'],
+      ['other-book', 'The Guild'],
+    ])
+    expect(renamed.settings).toEqual({ x: 1 })
+    const removed = withCopies(renamed, new Map([['g1', null]]))!
+    expect(readShared(removed).entries.map((e) => e.id)).toEqual(['other-book'])
+    const added = withCopies(undefined, new Map([['g2', { ...guild, id: 'g2' }]]))!
+    expect(readShared(added).entries.map((e) => e.id)).toEqual(['g2'])
+  })
+
+  it('aren’t written when nothing changed', () => {
+    expect(withCopies({ entries: [guild] }, new Map([['g1', { ...guild }]]))).toBeNull()
+    expect(withCopies({ entries: [guild] }, new Map([['gone', null]]))).toBeNull()
   })
 })

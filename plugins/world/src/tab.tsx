@@ -11,6 +11,12 @@ export interface TabContext {
   t: Translate<Key>;
   /** Calls back when items or their World data change, here or elsewhere. Returns how to stop. */
   watch(callback: () => void): () => void;
+  /** Sharing entries with the series, whose bible shows them. */
+  sharing: {
+    inSeries(): Promise<boolean>;
+    isShared(id: string): Promise<boolean>;
+    set(id: string, on: boolean): Promise<void>;
+  };
 }
 
 /** Whether an item can have links: World's own entries, characters and places. */
@@ -26,6 +32,8 @@ export function WorldTab({ nodeId, context }: { nodeId: string; context: TabCont
   const [to, setTo] = useState("");
   /** The other names as the writer is typing them, saved when they leave the field. */
   const [names, setNamesText] = useState<string | null>(null);
+  /** Whether the book is in a series, and whether this entry is shared with it. */
+  const [shared, setShared] = useState<{ inSeries: boolean; on: boolean } | null>(null);
   /** The scenes that mention this entry, once they've been read. */
   const [mentioned, setMentioned] = useState<{ id: string; title: string }[] | null>(null);
 
@@ -38,8 +46,17 @@ export function WorldTab({ nodeId, context }: { nodeId: string; context: TabCont
         setAll(data);
       }
     };
+    const loadSharing = async () => {
+      const inSeries = await context.sharing.inSeries();
+      const on = inSeries && (await context.sharing.isShared(nodeId));
+      if (live) setShared({ inSeries, on });
+    };
     void load();
-    const stop = context.watch(() => void load());
+    void loadSharing();
+    const stop = context.watch(() => {
+      void load();
+      void loadSharing();
+    });
     return () => {
       live = false;
       stop();
@@ -116,6 +133,12 @@ export function WorldTab({ nodeId, context }: { nodeId: string; context: TabCont
             }}
           />
         </div>
+      )}
+      {isEntry && shared?.inSeries && (
+        <label className="checkbox world-share" title={t("tab.shareHint")}>
+          <input type="checkbox" checked={shared.on} onChange={(e) => void context.sharing.set(nodeId, e.target.checked)} />
+          {t("tab.share")}
+        </label>
       )}
       <span className="field-label">{t("tab.links")}</span>
       {links.length === 0 && <p className="insp-hint">{t("tab.none")}</p>}

@@ -91,6 +91,18 @@
     "view.empty": "Inget i din värld än. Högerklicka på Världen i navigatorn för att lägga till en fraktion, en kultur eller något annat.",
     "view.noMatch": "Inget matchar.",
     "mention.message": "{name}: {kind}",
-    "mention.open": "Öppna {name}"
+    "mention.open": "Öppna {name}",
+    "kind.term.name": "Term",
+    "kind.term.plural": "Ordlista",
+    "field.term.pronunciation": "Uttal",
+    "field.term.meaning": "Betydelse",
+    "export.markdown": "Världsbibel (Markdown)",
+    "export.html": "Världsbibel (HTML)",
+    "export.description": "Varje post i din värld, med fält, kopplingar och text.",
+    "export.otherNames": "Andra namn",
+    "export.links": "Kopplingar",
+    "export.empty": "Det finns inget i den här världen än.",
+    "tab.share": "Dela med serien",
+    "tab.shareHint": "Visar den i seriebibeln, för alla böcker i serien."
   }
 }

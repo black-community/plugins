@@ -3,7 +3,10 @@ import { Plugin } from "@black/plugin";
 import locales from "black:locales";
 import { translator, type Translate } from "../../../shared/i18n";
 import { KINDS, kindDefinitions, type Key } from "./kinds";
-import { namesOf } from "./links";
+import { linksOf, namesOf } from "./links";
+import { bibleHtml, bibleMarkdown, type BibleInput } from "./bible";
+import { glossaryWords } from "./glossary";
+import { readShared, withCopies, type SharedCopy } from "./sharing";
 import { mentionFinder, otherNames, type Mention, type Name } from "./mentions";
 import { linkable, WorldTab, type TabContext } from "./tab";
 import { WorldView } from "./view";
@@ -40,6 +43,8 @@ export default class World extends Plugin {
   private known = new Map<string, Known>();
   private find: (text: string) => Mention[] = () => [];
   private indexing: Promise<void> | null = null;
+  /** The glossary's words already given to the book's dictionary, so they're only given once. */
+  private taught = new Set<string>();
 
   async onload() {
     this.t = translator<Key>(locales, this.app.language);
@@ -50,7 +55,11 @@ export default class World extends Plugin {
     };
     this.on("item-data-change", changed);
     this.on("nodes-change", changed);
+    this.on("shared-data-change", () => this.watchers.forEach((w) => w()));
+    // A sheet's fields don't send an event as they're edited, so shared copies catch up when the writer moves on.
+    this.on("selection-change", () => void this.syncShared());
     this.on("project-open", () => {
+      this.taught.clear();
       void this.define();
       void this.index();
     });
@@ -61,6 +70,11 @@ export default class World extends Plugin {
       watch: (callback) => {
         this.watchers.add(callback);
         return () => this.watchers.delete(callback);
+      },
+      sharing: {
+        inSeries: async () => !!(await this.app.project.info())?.series,
+        isShared: async (id) => readShared(await this.app.project.getSharedData?.()).entries.some((e) => e.id === id),
+        set: (id, on) => this.share(id, on),
       },
     };
     this.addInspectorTab({
@@ -108,8 +122,113 @@ export default class World extends Plugin {
       },
     });
 
+    // The world bible, as a format in Compile.
+    for (const format of ["markdown", "html"] as const)
+      this.addExporter({
+        id: `bible-${format}`,
+        name: t(format === "markdown" ? "export.markdown" : "export.html"),
+        description: t("export.description"),
+        extension: format === "markdown" ? "md" : "html",
+        export: async (book) => {
+          const input = await this.bible(book.title);
+          return format === "markdown" ? bibleMarkdown(input) : bibleHtml(input, book.language);
+        },
+      });
+
     await this.define();
     await this.index();
+  }
+
+  /** Gathers the world for its bible: every entry, kind by kind, with its fields, links and text. */
+  private async bible(title: string): Promise<BibleInput> {
+    const t = this.t;
+    const [nodes, data] = await Promise.all([this.app.project.nodes(), this.app.project.itemsWithData?.() ?? ({} as Record<string, unknown>)]);
+    const byId = new Map(nodes.map((n) => [n.id, n]));
+    const exists = (id: string) => !!byId.get(id) && !byId.get(id)!.inTrash;
+    const kinds = [];
+    for (const kind of KINDS) {
+      const entries = nodes.filter((n) => n.kind === `world:${kind.id}` && !n.inTrash).sort((a, b) => a.title.localeCompare(b.title));
+      const out = [];
+      for (const e of entries) {
+        const meta = await this.app.project.meta(e.id);
+        out.push({
+          title: e.title,
+          names: namesOf(data[e.id]),
+          synopsis: meta?.synopsis ?? "",
+          fields: Object.entries(meta?.fields ?? {}).filter(([, v]) => v.trim()),
+          links: linksOf(e.id, data, exists).map((l) => ({ label: t(l.label), other: byId.get(l.other)?.title ?? "" })),
+          text: await this.app.project.readText(e.id),
+        });
+      }
+      kinds.push({ plural: t(kind.plural), entries: out });
+    }
+    return { title, kinds, words: { otherNames: t("export.otherNames"), links: t("export.links"), empty: t("export.empty") } };
+  }
+
+  /** The copy of an entry that the series bible shows. */
+  private async copyOf(id: string): Promise<SharedCopy | null> {
+    const node = await this.app.project.node(id);
+    const kind = node?.kind?.startsWith("world:") ? node.kind.slice("world:".length) : null;
+    if (!node || !kind || node.inTrash) return null;
+    const meta = await this.app.project.meta(id);
+    const fields = Object.fromEntries(Object.entries(meta?.fields ?? {}).filter(([, v]) => v.trim()));
+    return { id, kind, title: node.title, synopsis: meta?.synopsis ?? "", fields };
+  }
+
+  /** Changes World's shared data: reads it, applies the changes, and writes it back, once more if it changed meanwhile. */
+  private async writeShared(changes: () => Promise<Map<string, SharedCopy | null>>) {
+    const project = this.app.project;
+    if (!project.getSharedData || !project.setSharedData) return;
+    for (let attempt = 0; attempt < 2; attempt++) {
+      try {
+        const next = withCopies(await project.getSharedData(), await changes());
+        if (next) await project.setSharedData(next);
+        return;
+      } catch (err) {
+        const name = (err as Error).name;
+        if (name === "Stale" && attempt === 0) continue;
+        if (name === "ReadOnly") return;
+        throw err;
+      }
+    }
+  }
+
+  /** Shares an entry with the series, or stops sharing it. */
+  private async share(id: string, on: boolean) {
+    try {
+      await this.writeShared(async () => new Map([[id, on ? await this.copyOf(id) : null]]));
+    } catch (err) {
+      this.app.ui.notify((err as Error).message);
+    }
+  }
+
+  /** Brings the shared copies of this book's entries up to date. Copies of other books' entries are left alone. */
+  private async syncShared() {
+    try {
+      if (!(await this.app.project.info())?.series) return;
+      const { entries } = readShared(await this.app.project.getSharedData?.());
+      if (!entries.length) return;
+      await this.writeShared(async () => {
+        const changes = new Map<string, SharedCopy | null>();
+        for (const e of entries) if (await this.app.project.node(e.id)) changes.set(e.id, await this.copyOf(e.id));
+        return changes;
+      });
+    } catch {
+      // Tried again at the next change.
+    }
+  }
+
+  /** Gives the glossary's words to the book's spelling dictionary, once each. */
+  private async teach(names: string[]) {
+    const words = glossaryWords(names).filter((w) => !this.taught.has(w));
+    if (!words.length || !this.app.project.addToDictionary) return;
+    try {
+      await this.app.project.addToDictionary(words);
+    } catch (err) {
+      // A book that can't be changed here keeps its dictionary.
+      if ((err as Error).name !== "ReadOnly") return;
+    }
+    words.forEach((w) => this.taught.add(w));
   }
 
   /** Defines World's kinds in the open book, in the book's language. Already there as they are, nothing changes. */
@@ -132,16 +251,22 @@ export default class World extends Plugin {
         const [nodes, data] = await Promise.all([this.app.project.nodes(), this.app.project.itemsWithData?.() ?? ({} as Record<string, unknown>)]);
         const names: Name[] = [];
         const known = new Map<string, Known>();
+        const terms: string[] = [];
         for (const node of nodes) {
           const kind = KINDS.find((k) => node.kind === `world:${k.id}`);
           if (node.type !== "entry" || !kind || node.inTrash || !node.title.trim()) continue;
           known.set(node.id, { title: node.title.trim(), kind: this.t(kind.name) });
-          for (const name of [node.title, ...otherNames(namesOf(data[node.id]))]) names.push({ name: name.trim(), entry: node.id });
+          for (const name of [node.title, ...otherNames(namesOf(data[node.id]))]) {
+            names.push({ name: name.trim(), entry: node.id });
+            if (kind.id === "term") terms.push(name);
+          }
         }
         this.names = names;
         this.known = known;
         this.find = mentionFinder(names);
         this.refreshHighlights();
+        await this.teach(terms);
+        await this.syncShared();
       } catch {
         // No book open: there's nothing to mark.
       } finally {

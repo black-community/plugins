@@ -91,6 +91,18 @@
     "view.empty": "Nothing in your world yet. Right-click World in the navigator to add a faction, a culture or anything else.",
     "view.noMatch": "Nothing matches.",
     "mention.message": "{name}: {kind}",
-    "mention.open": "Open {name}"
+    "mention.open": "Open {name}",
+    "kind.term.name": "Term",
+    "kind.term.plural": "Glossary",
+    "field.term.pronunciation": "How to say it",
+    "field.term.meaning": "Meaning",
+    "export.markdown": "World bible (Markdown)",
+    "export.html": "World bible (HTML)",
+    "export.description": "Every entry in your world, with its fields, links and text.",
+    "export.otherNames": "Other names",
+    "export.links": "Links",
+    "export.empty": "There’s nothing in this world yet.",
+    "tab.share": "Share with the series",
+    "tab.shareHint": "Shows it in the series bible, for every book of the series."
   }
 }
