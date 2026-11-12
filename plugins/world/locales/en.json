@@ -103,6 +103,12 @@
     "export.links": "Links",
     "export.empty": "There’s nothing in this world yet.",
     "tab.share": "Share with the series",
-    "tab.shareHint": "Shows it in the series bible, for every book of the series."
+    "tab.shareHint": "Shows it in the series bible, for every book of the series.",
+    "kinds.command": "Choose the kinds in your world…",
+    "kinds.title": "Kinds in your world",
+    "kinds.about": "Turn off the kinds you don’t need. Their entries aren’t deleted: they’re only hidden, and come back when you turn the kind on again. This is for every book in the series.",
+    "kinds.done": "Done",
+    "kinds.button": "Kinds…",
+    "field.place.region": "Region"
   }
 }

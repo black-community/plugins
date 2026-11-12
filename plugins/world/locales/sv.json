@@ -103,6 +103,12 @@
     "export.links": "Kopplingar",
     "export.empty": "Det finns inget i den här världen än.",
     "tab.share": "Dela med serien",
-    "tab.shareHint": "Visar den i seriebibeln, för alla böcker i serien."
+    "tab.shareHint": "Visar den i seriebibeln, för alla böcker i serien.",
+    "kinds.command": "Välj sorterna i din värld…",
+    "kinds.title": "Sorter i din värld",
+    "kinds.about": "Stäng av de sorter du inte behöver. Deras poster tas inte bort: de döljs bara och kommer tillbaka när du slår på sorten igen. Det gäller alla böcker i serien.",
+    "kinds.done": "Klar",
+    "kinds.button": "Sorter…",
+    "field.place.region": "Region"
   }
 }

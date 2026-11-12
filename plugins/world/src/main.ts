@@ -10,6 +10,7 @@ import { readShared, withCopies, type SharedCopy } from "./sharing";
 import { mentionFinder, otherNames, type Mention, type Name } from "./mentions";
 import { linkable, WorldTab, type TabContext } from "./tab";
 import { WorldView } from "./view";
+import { KindsPicker } from "./kindsPicker";
 
 /** The World view's icon: a globe, drawn like the app's own icons. */
 const GlobeIcon = ({ size = 16 }: { size?: number }) =>
@@ -55,7 +56,12 @@ export default class World extends Plugin {
     };
     this.on("item-data-change", changed);
     this.on("nodes-change", changed);
-    this.on("shared-data-change", () => this.watchers.forEach((w) => w()));
+    this.on("shared-data-change", () => {
+      this.watchers.forEach((w) => w());
+      // The kinds turned on or off may have changed on another device.
+      void this.define();
+      void this.index();
+    });
     // A sheet's fields don't send an event as they're edited, so shared copies catch up when the writer moves on.
     this.on("selection-change", () => void this.syncShared());
     this.on("project-open", () => {
@@ -71,6 +77,8 @@ export default class World extends Plugin {
         this.watchers.add(callback);
         return () => this.watchers.delete(callback);
       },
+      chooseKinds: () => this.chooseKinds(),
+      kindsOff: () => this.kindsOff(),
       sharing: {
         inSeries: async () => !!(await this.app.project.info())?.series,
         isShared: async (id) => readShared(await this.app.project.getSharedData?.()).entries.some((e) => e.id === id),
@@ -121,6 +129,8 @@ export default class World extends Plugin {
           });
       },
     });
+
+    this.addCommand({ id: "kinds", name: t("kinds.command"), run: () => this.chooseKinds() });
 
     // The world bible, as a format in Compile.
     for (const format of ["markdown", "html"] as const)
@@ -218,6 +228,29 @@ export default class World extends Plugin {
     }
   }
 
+  /**
+   * Adds a "Region" field to each place's sheet, for places within places, once: a place that has had it is marked in
+   * its item data, so a writer who removes the field doesn't get it back.
+   */
+  private async addRegions(nodes: { id: string; type: string; inTrash: boolean }[], data: Record<string, unknown>) {
+    const project = this.app.project;
+    if (!project.setItemData) return;
+    const info = await project.info();
+    const region = translator<Key>(locales, info?.language || this.app.language)("field.place.region");
+    try {
+      for (const place of nodes.filter((n) => n.type === "place" && !n.inTrash)) {
+        const mine = data[place.id];
+        if (mine && typeof mine === "object" && (mine as { region?: boolean }).region) continue;
+        const meta = await project.meta(place.id);
+        if (meta && !(region in meta.fields)) await project.setMeta(place.id, { fields: { ...meta.fields, [region]: "" } });
+        const current = await project.getItemData!(place.id);
+        await project.setItemData(place.id, { ...(current && typeof current === "object" ? current : {}), region: true });
+      }
+    } catch {
+      // A book that can't be changed here, or a change meanwhile: tried again at the next change.
+    }
+  }
+
   /** Gives the glossary's words to the book's spelling dictionary, once each. */
   private async teach(names: string[]) {
     const words = glossaryWords(names).filter((w) => !this.taught.has(w));
@@ -231,13 +264,62 @@ export default class World extends Plugin {
     words.forEach((w) => this.taught.add(w));
   }
 
-  /** Defines World's kinds in the open book, in the book's language. Already there as they are, nothing changes. */
+  /** The kinds the writer turned off, from World's shared data. */
+  private async kindsOff(): Promise<string[]> {
+    const { rest } = readShared(await this.app.project.getSharedData?.().catch(() => undefined));
+    return Array.isArray(rest.kindsOff) ? rest.kindsOff.filter((k): k is string => typeof k === "string") : [];
+  }
+
+  /** Opens the dialog where the writer turns kinds on and off. */
+  private async chooseKinds() {
+    const off = await this.kindsOff();
+    this.app.ui.openModal({
+      title: this.t("kinds.title"),
+      render: (closeIt) =>
+        createElement(KindsPicker, {
+          t: this.t,
+          off,
+          close: closeIt,
+          onChange: async (id, on) => {
+            try {
+              await this.writeKindsOff(id, on);
+              await this.define();
+            } catch (err) {
+              this.app.ui.notify((err as Error).name === "ReadOnly" ? this.t("tab.readOnly") : (err as Error).message);
+              throw err;
+            }
+          },
+        }),
+    });
+  }
+
+  /** Turns a kind on or off in World's shared data: reads it, changes it, and writes it, once more if it changed meanwhile. */
+  private async writeKindsOff(id: string, on: boolean) {
+    const project = this.app.project;
+    if (!project.getSharedData || !project.setSharedData) return;
+    for (let attempt = 0; attempt < 2; attempt++) {
+      try {
+        const current = await project.getSharedData();
+        const data = current && typeof current === "object" && !Array.isArray(current) ? (current as Record<string, unknown>) : {};
+        const was = Array.isArray(data.kindsOff) ? (data.kindsOff as string[]) : [];
+        const kindsOff = on ? was.filter((k) => k !== id) : [...new Set([...was, id])];
+        await project.setSharedData({ ...data, kindsOff });
+        return;
+      } catch (err) {
+        if ((err as Error).name === "Stale" && attempt === 0) continue;
+        throw err;
+      }
+    }
+  }
+
+  /** Defines World's kinds in the open book, in the book's language, with those the writer turned off hidden. */
   private async define() {
     const info = await this.app.project.info();
     if (!info || !this.app.project.defineKind) return;
     const t = translator<Key>(locales, info.language || this.app.language);
+    const off = await this.kindsOff();
     try {
-      for (const kind of kindDefinitions(t)) await this.app.project.defineKind(kind);
+      for (const kind of kindDefinitions(t)) await this.app.project.defineKind(off.includes(kind.id) ? { ...kind, hidden: true } : kind);
     } catch (err) {
       // A book that can't be changed here (a reader's, or after the trial) keeps the kinds it has.
       if ((err as Error).name !== "ReadOnly") throw err;
@@ -248,13 +330,18 @@ export default class World extends Plugin {
   private index() {
     this.indexing ??= (async () => {
       try {
-        const [nodes, data] = await Promise.all([this.app.project.nodes(), this.app.project.itemsWithData?.() ?? ({} as Record<string, unknown>)]);
+        const [nodes, data, off] = await Promise.all([
+          this.app.project.nodes(),
+          this.app.project.itemsWithData?.() ?? ({} as Record<string, unknown>),
+          this.kindsOff(),
+        ]);
         const names: Name[] = [];
         const known = new Map<string, Known>();
         const terms: string[] = [];
         for (const node of nodes) {
           const kind = KINDS.find((k) => node.kind === `world:${k.id}`);
-          if (node.type !== "entry" || !kind || node.inTrash || !node.title.trim()) continue;
+          // A kind the writer turned off isn't marked or suggested, as its entries aren't shown.
+          if (node.type !== "entry" || !kind || off.includes(kind.id) || node.inTrash || !node.title.trim()) continue;
           known.set(node.id, { title: node.title.trim(), kind: this.t(kind.name) });
           for (const name of [node.title, ...otherNames(namesOf(data[node.id]))]) {
             names.push({ name: name.trim(), entry: node.id });
@@ -266,6 +353,7 @@ export default class World extends Plugin {
         this.find = mentionFinder(names);
         this.refreshHighlights();
         await this.teach(terms);
+        await this.addRegions(nodes, data);
         await this.syncShared();
       } catch {
         // No book open: there's nothing to mark.

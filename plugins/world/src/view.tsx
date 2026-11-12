@@ -40,8 +40,9 @@ export function WorldView({ context }: { context: TabContext }) {
   useEffect(() => {
     let live = true;
     const load = async () => {
-      const [n, data] = await Promise.all([app.project.nodes(), app.project.itemsWithData?.() ?? ({} as Record<string, unknown>)]);
-      const entries = n.filter((x) => x.type === "entry" && x.kind?.startsWith("world:") && !x.inTrash);
+      const [n, data, off] = await Promise.all([app.project.nodes(), app.project.itemsWithData?.() ?? ({} as Record<string, unknown>), context.kindsOff()]);
+      // Entries of a kind the writer turned off aren't shown.
+      const entries = n.filter((x) => x.type === "entry" && x.kind?.startsWith("world:") && !off.includes(x.kind.slice("world:".length)) && !x.inTrash);
       const metas = await Promise.all(entries.map((e) => app.project.meta(e.id)));
       if (!live) return;
       setNodes(n);
@@ -76,6 +77,9 @@ export function WorldView({ context }: { context: TabContext }) {
           value={query}
           onChange={(e) => setQuery(e.target.value)}
         />
+        <button className="btn sm" onClick={() => context.chooseKinds()}>
+          {t("kinds.button")}
+        </button>
         {linkedItems.length > 0 && (
           <select className="select" aria-label={t("view.linkedTo")} value={linkedTo} onChange={(e) => setLinkedTo(e.target.value)}>
             <option value="">{t("view.anyLink")}</option>

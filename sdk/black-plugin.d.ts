@@ -57,8 +57,11 @@ export interface WaitInfo {
    * tablet. Finish all work in the handler; don't leave anything for later.
    */
   quitting?: boolean
-  /** Only for 'copy-due': 'timer' when the writing timer runs out and something has changed, 'new-book' when a book was just made. */
-  reason?: 'timer' | 'new-book'
+  /**
+   * Only for 'copy-due': 'timer' when the writing timer runs out and something has changed, 'new-book' when a book was
+   * just made, 'before-removal' just before the writer removes a plugin's data from the book (API 12).
+   */
+  reason?: 'timer' | 'new-book' | 'before-removal'
 }
 
 export interface Manifest {
@@ -149,6 +152,11 @@ export interface KindDefinition {
   fields?: string[]
   /** The plugin's section in the navigator, which holds its entries: { id: "world", name: "World" }. */
   section: { id: string; name: string }
+  /**
+   * Turns the kind off: its entries aren't shown and none can be made, but they're all kept, and come back when the
+   * kind is defined again without it. A section whose kinds are all off isn't shown.
+   */
+  hidden?: boolean
 }
 
 export interface NodeInfo {

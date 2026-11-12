@@ -89,3 +89,15 @@
   -webkit-line-clamp: 2;
   -webkit-box-orient: vertical;
 }
+
+/* The dialog for the kinds in a world. */
+.world-kinds {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+.world-kinds-foot {
+  display: flex;
+  justify-content: flex-end;
+  margin-top: 8px;
+}

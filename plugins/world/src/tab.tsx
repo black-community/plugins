@@ -11,6 +11,10 @@ export interface TabContext {
   t: Translate<Key>;
   /** Calls back when items or their World data change, here or elsewhere. Returns how to stop. */
   watch(callback: () => void): () => void;
+  /** Opens the dialog where the writer turns kinds on and off. */
+  chooseKinds(): void;
+  /** The kinds the writer turned off, whose entries aren't shown. */
+  kindsOff(): Promise<string[]>;
   /** Sharing entries with the series, whose bible shows them. */
   sharing: {
     inSeries(): Promise<boolean>;
