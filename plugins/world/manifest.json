@@ -1,10 +1,12 @@
 {
   "id": "world",
   "version": "1.0.0",
-  "author": "Bläck",
+  "author": "Bl\u00e4ck",
   "apiVersion": 12,
   "main": "main.js",
   "sandboxed": false,
-  "permissions": ["project:write"],
+  "permissions": [
+    "project:write"
+  ],
   "category": "planning"
 }

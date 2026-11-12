@@ -1,0 +1,24 @@
+/* World's tab in the inspector. It uses the app's own classes and colours; this only lays out its rows and form. */
+.world-tab .world-link {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+.world-tab .world-link .ilr-title {
+  flex: 1;
+  min-width: 0;
+  text-align: left;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.world-tab .world-add {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  margin-top: 8px;
+}
+.world-tab .world-add .select {
+  flex: 1 1 8em;
+  min-width: 0;
+}
