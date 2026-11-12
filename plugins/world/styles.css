@@ -101,3 +101,90 @@
   justify-content: flex-end;
   margin-top: 8px;
 }
+
+/* A map and its pins. A pin's place is a share of the picture's width and height, so it stays put at any size. */
+.world-map-frame {
+  position: relative;
+  cursor: crosshair;
+  margin: 6px 0;
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+  overflow: hidden;
+  line-height: 0;
+}
+.world-map-frame img {
+  width: 100%;
+  height: auto;
+  display: block;
+  user-select: none;
+}
+.world-map.large .world-map-frame img {
+  max-height: 70vh;
+  object-fit: contain;
+}
+.world-pin {
+  position: absolute;
+  transform: translate(-50%, -100%);
+  display: flex;
+  align-items: center;
+  gap: 2px;
+  line-height: 1.2;
+  cursor: default;
+}
+.world-pin::after {
+  content: "";
+  position: absolute;
+  left: 50%;
+  bottom: -5px;
+  width: 7px;
+  height: 7px;
+  margin-left: -3.5px;
+  border-radius: 50%;
+  background: var(--accent);
+  box-shadow: 0 0 0 2px var(--bg, #000);
+}
+.world-pin.pending::after {
+  background: var(--info);
+}
+.world-pin-label,
+.world-pin-remove {
+  font: inherit;
+  font-size: 11px;
+  color: var(--text);
+  background: color-mix(in srgb, var(--panel) 88%, transparent);
+  border: 1px solid var(--border);
+  border-radius: 4px;
+  padding: 1px 5px;
+  cursor: pointer;
+  white-space: nowrap;
+}
+.world-pin-remove {
+  padding: 1px 4px;
+  color: var(--muted);
+}
+.world-pin:not(:hover) .world-pin-remove {
+  display: none;
+}
+
+/* The world's calendar. */
+.world-calendar-form {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+.world-calendar-form .field {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+.world-calendar-scene {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  width: 100%;
+  text-align: left;
+}
+.world-view-modes {
+  display: flex;
+  gap: 2px;
+}

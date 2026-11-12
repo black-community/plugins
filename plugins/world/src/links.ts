@@ -15,6 +15,7 @@ export const LINK_TYPES = [
   { id: "locatedIn", out: "link.locatedIn.out", in: "link.locatedIn.in" },
   { id: "madeBy", out: "link.madeBy.out", in: "link.madeBy.in" },
   { id: "worships", out: "link.worships.out", in: "link.worships.in" },
+  { id: "bannedFrom", out: "link.bannedFrom.out", in: "link.bannedFrom.in" },
 ] as const satisfies readonly { id: string; out: Key; in: Key }[];
 
 export type LinkType = (typeof LINK_TYPES)[number]["id"];

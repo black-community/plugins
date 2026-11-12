@@ -11,6 +11,10 @@ import { mentionFinder, otherNames, type Mention, type Name } from "./mentions";
 import { linkable, WorldTab, type TabContext } from "./tab";
 import { WorldView } from "./view";
 import { KindsPicker } from "./kindsPicker";
+import { CalendarDialog } from "./calendarView";
+import { readCalendar, type WorldCalendar } from "./calendar";
+import { MapBoard } from "./mapBoard";
+import { worldChecks } from "./checks";
 
 /** The World view's icon: a globe, drawn like the app's own icons. */
 const GlobeIcon = ({ size = 16 }: { size?: number }) =>
@@ -79,6 +83,9 @@ export default class World extends Plugin {
       },
       chooseKinds: () => this.chooseKinds(),
       kindsOff: () => this.kindsOff(),
+      calendar: async () => readCalendar(await this.app.project.getSharedData?.().catch(() => undefined)),
+      editCalendar: () => void this.editCalendar(),
+      openMap: (mapId) => void this.openMap(mapId, context),
       sharing: {
         inSeries: async () => !!(await this.app.project.info())?.series,
         isShared: async (id) => readShared(await this.app.project.getSharedData?.()).entries.some((e) => e.id === id),
@@ -131,6 +138,29 @@ export default class World extends Plugin {
     });
 
     this.addCommand({ id: "kinds", name: t("kinds.command"), run: () => this.chooseKinds() });
+    this.addCommand({ id: "calendar", name: t("calendar.command"), run: () => this.editCalendar() });
+
+    // Its checks, in the Continuity tab: someone where their faction is banned, and places inside themselves.
+    this.addContinuityCheck?.({
+      id: "world",
+      name: t("check.name"),
+      run: async () => {
+        const project = this.app.project;
+        const [nodes, data, ids] = await Promise.all([project.nodes(), project.itemsWithData?.() ?? ({} as Record<string, unknown>), project.manuscript()]);
+        const titles = new Map(nodes.map((n) => [n.id, n.title]));
+        const scenes = await Promise.all(
+          ids.map(async (id) => {
+            const m = await project.meta(id);
+            return { id, title: titles.get(id) ?? "", povId: m?.povId ?? "", castIds: m?.castIds ?? [], placeId: m?.placeId ?? "" };
+          }),
+        );
+        return worldChecks(scenes, data, (id) => titles.get(id) ?? "").map((f) => ({
+          key: f.key,
+          itemId: f.itemId,
+          message: t(f.kind === "banned" ? "check.banned" : "check.loop", f.values),
+        }));
+      },
+    });
 
     // The world bible, as a format in Compile.
     for (const format of ["markdown", "html"] as const)
@@ -262,6 +292,49 @@ export default class World extends Plugin {
       if ((err as Error).name !== "ReadOnly") return;
     }
     words.forEach((w) => this.taught.add(w));
+  }
+
+  /** Opens the dialog for the world's calendar, and saves it in World's shared data. */
+  private async editCalendar() {
+    const calendar = readCalendar(await this.app.project.getSharedData?.().catch(() => undefined));
+    this.app.ui.openModal({
+      title: this.t("calendar.title"),
+      render: (close) =>
+        createElement(CalendarDialog, {
+          t: this.t,
+          calendar,
+          close,
+          save: async (next: WorldCalendar) => {
+            try {
+              await this.editShared((data) => ({ ...data, calendar: next }));
+            } catch (err) {
+              this.app.ui.notify((err as Error).name === "ReadOnly" ? this.t("tab.readOnly") : (err as Error).message);
+            }
+          },
+        }),
+    });
+  }
+
+  /** Shows a map larger, in a dialog. */
+  private async openMap(mapId: string, context: TabContext) {
+    const node = await this.app.project.node(mapId);
+    this.app.ui.openModal({ title: node?.title ?? this.t("kind.map.name"), wide: true, render: () => createElement(MapBoard, { mapId, context, large: true }) });
+  }
+
+  /** Changes World's shared data: reads it, changes it, and writes it, once more if it changed meanwhile. */
+  private async editShared(change: (data: Record<string, unknown>) => Record<string, unknown>) {
+    const project = this.app.project;
+    if (!project.getSharedData || !project.setSharedData) return;
+    for (let attempt = 0; attempt < 2; attempt++) {
+      try {
+        const current = await project.getSharedData();
+        await project.setSharedData(change(current && typeof current === "object" && !Array.isArray(current) ? (current as Record<string, unknown>) : {}));
+        return;
+      } catch (err) {
+        if ((err as Error).name === "Stale" && attempt === 0) continue;
+        throw err;
+      }
+    }
   }
 
   /** The kinds the writer turned off, from World's shared data. */

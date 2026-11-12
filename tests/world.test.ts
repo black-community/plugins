@@ -9,6 +9,9 @@ import { mentionFinder, otherNames } from '../plugins/world/src/mentions'
 import { glossaryWords } from '../plugins/world/src/glossary'
 import { bibleHtml, bibleMarkdown, type BibleInput } from '../plugins/world/src/bible'
 import { readShared, withCopies } from '../plugins/world/src/sharing'
+import { monthsText, parseMonths, readCalendar, worldDate, yearLabel } from '../plugins/world/src/calendar'
+import { addPin, mapsWith, readPins, removePin } from '../plugins/world/src/maps'
+import { worldChecks } from '../plugins/world/src/checks'
 
 const locales = { en: en.messages, sv: sv.messages } as Record<string, Record<string, string>>
 /** The rule the app checks a kind's and a section's ids against (src/lib/kinds.ts, KIND_ID). */
@@ -17,7 +20,7 @@ const KIND_ID = /^[a-z0-9][a-z0-9-]{0,39}$/
 describe('World’s kinds', () => {
   it('are the plan’s seven and the glossary’s terms, with valid ids, in one World section', () => {
     const kinds = kindDefinitions(translator<Key>(locales, 'en'))
-    expect(kinds.map((k) => k.name)).toEqual(['Faction', 'Culture', 'Religion', 'Creature', 'Artifact', 'Magic', 'Term', 'Language'])
+    expect(kinds.map((k) => k.name)).toEqual(['Faction', 'Culture', 'Religion', 'Creature', 'Artifact', 'Magic', 'Map', 'Term', 'Language'])
     for (const k of kinds) {
       expect(k.id).toMatch(KIND_ID)
       expect(k.section).toEqual({ id: 'world', name: 'World' })
@@ -216,5 +219,73 @@ describe('entries shared with the series', () => {
   it('aren’t written when nothing changed', () => {
     expect(withCopies({ entries: [guild] }, new Map([['g1', { ...guild }]]))).toBeNull()
     expect(withCopies({ entries: [guild] }, new Map([['gone', null]]))).toBeNull()
+  })
+})
+
+describe('the world’s calendar', () => {
+  const calendar = { months: parseMonths('Frostmoon 30\nThaw: 20\n\nnot a month\nHarvest 10'), startYear: 1203, era: 'AE' }
+
+  it('reads months from what the writer typed', () => {
+    expect(calendar.months).toEqual([
+      { name: 'Frostmoon', days: 30 },
+      { name: 'Thaw', days: 20 },
+      { name: 'Harvest', days: 10 },
+    ])
+    expect(monthsText(calendar.months)).toBe('Frostmoon 30\nThaw 20\nHarvest 10')
+  })
+
+  it('turns story days into the world’s dates, with day 1 the first day of the start year', () => {
+    expect(worldDate(1, calendar)).toEqual({ year: 1203, month: 0, day: 1 })
+    expect(worldDate(31, calendar)).toEqual({ year: 1203, month: 1, day: 1 })
+    expect(worldDate(60, calendar)).toEqual({ year: 1203, month: 2, day: 10 })
+    expect(worldDate(61, calendar)).toEqual({ year: 1204, month: 0, day: 1 })
+    expect(worldDate(0, calendar)).toEqual({ year: 1202, month: 2, day: 10 })
+    expect(yearLabel(1204, calendar)).toBe('1204 AE')
+  })
+
+  it('is read from the shared data, or is null until it’s set up', () => {
+    expect(readCalendar({ calendar })).toEqual(calendar)
+    expect(readCalendar({ calendar: { months: [] } })).toBeNull()
+    expect(readCalendar(undefined)).toBeNull()
+  })
+})
+
+describe('maps', () => {
+  it('keep pins by id, on the picture, and know which maps an item is on', () => {
+    const map = addPin(addPin({ other: 1 }, { x: 0.5, y: 0.25, to: 'guild' }, 'p1'), { x: 2, y: -1, to: 'bristol' }, 'p2')
+    expect(readPins(map)).toEqual({ p1: { x: 0.5, y: 0.25, to: 'guild' }, p2: { x: 1, y: 0, to: 'bristol' } })
+    expect(map.other).toBe(1)
+    expect(mapsWith('guild', { m1: map, m2: {} })).toEqual(['m1'])
+    expect(readPins(removePin(map, 'p1'))).toEqual({ p2: { x: 1, y: 0, to: 'bristol' } })
+    expect(readPins({ pins: { bad: { x: 'a', to: 'x' } } })).toEqual({})
+  })
+})
+
+describe('World’s continuity checks', () => {
+  const link = (type: string, to: string, id: string) => ({ links: { [id]: { type, to } } })
+  const title = (id: string) => id.toUpperCase()
+
+  it('find someone in a scene set where their faction is banned, also inside the banned place', () => {
+    const all = {
+      ama: link('memberOf', 'guild', 'l1'),
+      guild: link('bannedFrom', 'city', 'l2'),
+      harbour: link('locatedIn', 'city', 'l3'),
+    }
+    const scenes = [
+      { id: 's1', title: 'At the harbour', povId: 'ama', castIds: [], placeId: 'harbour' },
+      { id: 's2', title: 'Elsewhere', povId: '', castIds: ['ama'], placeId: 'forest' },
+      { id: 's3', title: 'In the city', povId: '', castIds: ['ama', 'ama'], placeId: 'city' },
+    ]
+    const found = worldChecks(scenes, all, title)
+    expect(found.map((f) => [f.itemId, f.values.place])).toEqual([
+      ['s1', 'CITY'],
+      ['s3', 'CITY'],
+    ])
+    expect(found[0]).toMatchObject({ kind: 'banned', values: { name: 'AMA', group: 'GUILD', scene: 'At the harbour' } })
+  })
+
+  it('find a place located inside itself', () => {
+    const all = { a: link('locatedIn', 'b', 'l1'), b: link('locatedIn', 'c', 'l2'), c: link('locatedIn', 'a', 'l3'), d: link('locatedIn', 'a', 'l4') }
+    expect(worldChecks([], all, title).map((f) => f.itemId).sort()).toEqual(['a', 'b', 'c'])
   })
 })

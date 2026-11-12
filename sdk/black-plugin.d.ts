@@ -179,6 +179,10 @@ export interface MetaInfo {
   /** When the scene happens, as written on its card: "Day 3", "1888-05-01"… */
   when: string
   words: number
+  /** A scene's point-of-view character, its cast, and its setting, by item id ('' or [] for none). Read only. API 12. */
+  povId?: string
+  castIds?: string[]
+  placeId?: string
 }
 
 export interface Label {
@@ -291,6 +295,13 @@ export interface App {
     write(id: string, html: string): Promise<void>
     create(type: 'text' | 'folder' | 'character' | 'place' | 'note' | 'research' | { kind: string }, title: string, parentId?: string): Promise<string>
     meta(id: string): Promise<MetaInfo | null>
+    /** The address of an item's picture (a character's, a place's or an entry's), for an <img>, or null if it has none. API 12. */
+    picture?(id: string): Promise<string | null>
+    /**
+     * A scene's story time, as the timeline reads its "when": a day number, a date, or both when the series says which
+     * date is day 1. Null if it has none the timeline understands. API 12.
+     */
+    storyTime?(id: string): Promise<{ day: number | null; date: string | null; time: string | null } | null>
     setMeta(id: string, patch: Partial<Pick<MetaInfo, 'synopsis' | 'notes' | 'keywords' | 'fields' | 'when'>>): Promise<void>
     /** Moves an item to the trash, where the writer can restore it. */
     trash(id: string): Promise<void>
@@ -911,6 +922,16 @@ export declare class Plugin {
     icon?: ComponentType<{ size?: number }> | string
     active?: () => boolean
     run: () => void | Promise<void>
+  }): () => void
+  /**
+   * Adds a check to the series' Continuity tab, run on the open book with the app's own whenever the tab shows or the
+   * book changes, for at most 10 seconds. Each finding's `key` says which finding it is, so one the writer marks as
+   * handled stays handled until its key changes; `itemId` is what "Open" goes to. At most 200 findings. API 12.
+   */
+  addContinuityCheck?(check: {
+    id: string
+    name: string
+    run: () => { key: string; message: string; itemId?: string }[] | Promise<{ key: string; message: string; itemId?: string }[]>
   }): () => void
   /** Shows suggestions under the caret as the writer types after `trigger` ("@", "#"…) at the start of a word. `trigger` must be a single character. */
   addSuggester(suggester: {

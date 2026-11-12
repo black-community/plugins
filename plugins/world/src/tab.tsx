@@ -4,6 +4,9 @@ import type { Translate } from "../../../shared/i18n";
 import { KINDS, type Key } from "./kinds";
 import { addLink, LINK_TYPES, linksOf, namesOf, removeLink, setNames, type LinkType, type SeenLink } from "./links";
 import { mentionFinder, otherNames } from "./mentions";
+import type { WorldCalendar } from "./calendar";
+import { mapsWith } from "./maps";
+import { MapBoard } from "./mapBoard";
 
 /** What the tab needs from the plugin: the app, its words in the writer's language, and word of changes. */
 export interface TabContext {
@@ -15,12 +18,28 @@ export interface TabContext {
   chooseKinds(): void;
   /** The kinds the writer turned off, whose entries aren't shown. */
   kindsOff(): Promise<string[]>;
+  /** The world's calendar, and the dialog to set it up. */
+  calendar(): Promise<WorldCalendar | null>;
+  editCalendar(): void;
+  /** Shows a map larger, in a dialog. */
+  openMap(mapId: string): void;
   /** Sharing entries with the series, whose bible shows them. */
   sharing: {
     inSeries(): Promise<boolean>;
     isShared(id: string): Promise<boolean>;
     set(id: string, on: boolean): Promise<void>;
   };
+}
+
+/** What can be linked or pinned, grouped: each of World's kinds, then characters and places. */
+export function targetGroups(nodes: NodeInfo[], t: Translate<Key>, except: string) {
+  return [
+    ...KINDS.map((k) => ({ label: t(k.plural), items: nodes.filter((n) => n.kind === `world:${k.id}`) })),
+    { label: t("tab.characters"), items: nodes.filter((n) => n.type === "character") },
+    { label: t("tab.places"), items: nodes.filter((n) => n.type === "place") },
+  ]
+    .map((g) => ({ ...g, items: g.items.filter((n) => n.id !== except && !n.inTrash).sort((a, b) => a.title.localeCompare(b.title)) }))
+    .filter((g) => g.items.length);
 }
 
 /** Whether an item can have links: World's own entries, characters and places. */
@@ -96,14 +115,7 @@ export function WorldTab({ nodeId, context }: { nodeId: string; context: TabCont
     return byId.get(l.other)?.title ?? "";
   }
 
-  /** What can be linked to, grouped: each of World's kinds, then characters and places. */
-  const groups = [
-    ...KINDS.map((k) => ({ label: t(k.plural), items: nodes.filter((n) => n.kind === `world:${k.id}`) })),
-    { label: t("tab.characters"), items: nodes.filter((n) => n.type === "character") },
-    { label: t("tab.places"), items: nodes.filter((n) => n.type === "place") },
-  ]
-    .map((g) => ({ ...g, items: g.items.filter((n) => n.id !== nodeId && !n.inTrash).sort((a, b) => a.title.localeCompare(b.title)) }))
-    .filter((g) => g.items.length);
+  const groups = targetGroups(nodes, t, nodeId);
 
   /** Changes one item's World data: reads it, changes what was read, and writes it back, once more if it changed meanwhile. */
   const change = async (holder: string, edit: (current: unknown) => unknown | null) => {
@@ -143,6 +155,14 @@ export function WorldTab({ nodeId, context }: { nodeId: string; context: TabCont
           <input type="checkbox" checked={shared.on} onChange={(e) => void context.sharing.set(nodeId, e.target.checked)} />
           {t("tab.share")}
         </label>
+      )}
+      {node?.kind === "world:map" && (
+        <>
+          <MapBoard mapId={nodeId} context={context} />
+          <button className="link-btn" onClick={() => context.openMap(nodeId)}>
+            {t("map.large")}
+          </button>
+        </>
       )}
       <span className="field-label">{t("tab.links")}</span>
       {links.length === 0 && <p className="insp-hint">{t("tab.none")}</p>}
@@ -189,6 +209,18 @@ export function WorldTab({ nodeId, context }: { nodeId: string; context: TabCont
             {t("tab.add")}
           </button>
         </form>
+      )}
+      {mapsWith(nodeId, all).filter(shown).length > 0 && (
+        <>
+          <span className="field-label">{t("map.onMaps")}</span>
+          {mapsWith(nodeId, all)
+            .filter(shown)
+            .map((map) => (
+              <button key={map} className="insp-link-row world-mention" onClick={() => context.openMap(map)}>
+                <span className="ilr-title">{byId.get(map)?.title}</span>
+              </button>
+            ))}
+        </>
       )}
       {isEntry && (
         <>

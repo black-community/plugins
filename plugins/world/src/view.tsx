@@ -3,6 +3,7 @@ import { useEffect, useState } from "react";
 import { KINDS } from "./kinds";
 import { linksOf, namesOf } from "./links";
 import type { TabContext } from "./tab";
+import { CalendarView } from "./calendarView";
 
 /** An entry as a card shows it. */
 interface Card {
@@ -35,6 +36,8 @@ export function WorldView({ context }: { context: TabContext }) {
   const [nodes, setNodes] = useState<NodeInfo[]>([]);
   const [all, setAll] = useState<Record<string, unknown>>({});
   const [query, setQuery] = useState("");
+  /** The entries as cards, or the scenes in the world's calendar. */
+  const [mode, setMode] = useState<"entries" | "calendar">("entries");
   const [linkedTo, setLinkedTo] = useState("");
 
   useEffect(() => {
@@ -69,6 +72,20 @@ export function WorldView({ context }: { context: TabContext }) {
   return (
     <div className="world-view">
       <div className="world-view-bar">
+        <div className="segmented world-view-modes">
+          <button aria-pressed={mode === "entries"} onClick={() => setMode("entries")}>
+            {t("calendar.entries")}
+          </button>
+          <button aria-pressed={mode === "calendar"} onClick={() => setMode("calendar")}>
+            {t("calendar.tab")}
+          </button>
+        </div>
+        {mode === "calendar" ? (
+          <button className="btn sm" onClick={() => context.editCalendar()}>
+            {t("calendar.edit")}
+          </button>
+        ) : (
+          <>
         <input
           className="input selectable"
           type="search"
@@ -90,8 +107,12 @@ export function WorldView({ context }: { context: TabContext }) {
             ))}
           </select>
         )}
+          </>
+        )}
       </div>
-      {cards === null ? null : cards.length === 0 ? (
+      {mode === "calendar" ? (
+        <CalendarView context={context} />
+      ) : cards === null ? null : cards.length === 0 ? (
         <p className="insp-hint world-view-empty">{t("view.empty")}</p>
       ) : shown.length === 0 ? (
         <p className="insp-hint world-view-empty">{t("view.noMatch")}</p>

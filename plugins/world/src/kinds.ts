@@ -21,6 +21,7 @@ export const KINDS: WorldKind[] = [
   { id: "creature", icon: "paw", name: "kind.creature.name", plural: "kind.creature.plural", fields: ["field.creature.habitat", "field.creature.size", "field.creature.diet", "field.creature.danger", "field.creature.lore"] },
   { id: "artifact", icon: "gem", name: "kind.artifact.name", plural: "kind.artifact.plural", fields: ["field.artifact.madeBy", "field.artifact.owner", "field.artifact.powers", "field.artifact.whereabouts"] },
   { id: "magic", icon: "wand", name: "kind.magic.name", plural: "kind.magic.plural", fields: ["field.magic.source", "field.magic.cost", "field.magic.limits", "field.magic.whoCanUseIt"] },
+  { id: "map", icon: "map", name: "kind.map.name", plural: "kind.map.plural", fields: ["field.map.covers"] },
   { id: "term", icon: "feather", name: "kind.term.name", plural: "kind.term.plural", fields: ["field.term.pronunciation", "field.term.meaning"] },
   { id: "language", icon: "languages", name: "kind.language.name", plural: "kind.language.plural", fields: ["field.language.spokenIn", "field.language.sounds", "field.language.sampleWords"] },
 ];
