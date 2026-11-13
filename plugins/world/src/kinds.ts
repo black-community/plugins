@@ -1,4 +1,4 @@
-import type { KindDefinition, KindIcon } from "@black/plugin";
+import type { KindDefinition, KindIcon } from "@black-studio/plugin";
 import type { Translate } from "../../../shared/i18n";
 import type en from "../locales/en.json";
 

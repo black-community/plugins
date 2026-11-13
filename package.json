@@ -10,6 +10,7 @@
     "test": "vitest run"
   },
   "devDependencies": {
+    "@black-studio/plugin": "^1.1.0",
     "@types/node": "^26.6.6",
     "@types/react": "^19.3.0",
     "jszip": "^3.10.2",

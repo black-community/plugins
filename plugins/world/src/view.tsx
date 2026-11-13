@@ -1,4 +1,4 @@
-import type { MetaInfo, NodeInfo } from "@black/plugin";
+import type { MetaInfo, NodeInfo } from "@black-studio/plugin";
 import { useEffect, useState } from "react";
 import { KINDS } from "./kinds";
 import { linksOf, namesOf } from "./links";

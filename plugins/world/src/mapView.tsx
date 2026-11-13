@@ -1,4 +1,4 @@
-import type { NodeInfo } from "@black/plugin";
+import type { NodeInfo } from "@black-studio/plugin";
 import { useEffect, useState } from "react";
 import { MapBoard } from "./mapBoard";
 import type { TabContext } from "./tab";

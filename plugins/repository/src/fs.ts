@@ -1,10 +1,10 @@
 /*
  * The file system isomorphic-git reads and writes. Every path it uses starts at DIR, which stands for the project's folder.
- * Each call goes to the app (app.folder), which checks the path. The app says "not there" with null, and this turns
- * that into Node's error codes, which is how isomorphic-git tells "not there" from a failure.
+ * Each call goes to the app (app.folder), which checks the path. The app returns null for a missing file, and this
+ * turns that into Node's ENOENT error, which is how isomorphic-git tells a missing file from a failure.
  */
 
-/** Where isomorphic-git thinks the project is. It isn't a real place. */
+/** Where isomorphic-git thinks the project is. It isn't a real path. */
 export const DIR = "/project";
 
 /** What the plugin needs from a project's folder: app.folder, with the project's key filled in. */
@@ -35,7 +35,7 @@ function fail(code: string, path: string): never {
   throw Object.assign(new Error(`${code}: ${path}`), { code });
 }
 
-/** Turns one of isomorphic-git's paths into a path in the project. Anything that isn't in it is a path to nowhere. */
+/** Turns one of isomorphic-git's paths into a path in the project. A path outside the project doesn't exist. */
 function inProject(path: string) {
   const parts: string[] = [];
   for (const part of path.split("/")) {
@@ -86,7 +86,7 @@ export function folderFs(folder: FolderAccess) {
       async readdir(path: string) {
         const entries = await folder.list(inProject(path));
         if (!entries) fail("ENOENT", path);
-        // A link is never followed or kept in a version, so as far as git goes it isn't there. Nor is a temporary file: the
+        // A link is never followed or kept in a version, so git never sees it. Nor does it see a temporary file: the
         // app writes one beside a file for a moment, and it may be gone by the time git looks at it.
         return entries.filter((e) => !e.link && !e.name.endsWith(".tmp")).map((e) => e.name);
       },

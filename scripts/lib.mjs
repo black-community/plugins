@@ -10,8 +10,13 @@ import { createHash } from 'node:crypto'
 import { existsSync, mkdirSync, readdirSync, readFileSync, writeFileSync } from 'node:fs'
 import path from 'node:path'
 
+/**
+ * The name the app knows the SDK by at run time. The plugins import '@black-studio/plugin', its package on npm, and the
+ * build turns that into this, so they also work in app versions from before the package was renamed.
+ */
+const RUNTIME_SDK = '@black/plugin'
 /** Modules the app provides at run time, so they're left out of the bundle. */
-const PROVIDED = ['@black/plugin', 'react', 'react/jsx-runtime', '@tiptap/core', '@tiptap/pm/state', '@tiptap/pm/view', '@tiptap/pm/model']
+const PROVIDED = ['@black-studio/plugin', RUNTIME_SDK, 'react', 'react/jsx-runtime', '@tiptap/core', '@tiptap/pm/state', '@tiptap/pm/view', '@tiptap/pm/model']
 const LANGUAGE = /^[a-z]{2,3}(-[A-Za-z0-9]+)?$/
 const LOCALES_MODULE = 'black:locales'
 
@@ -103,7 +108,7 @@ export async function buildPlugin(dir, outDir) {
     // The app finds the plugin's class through this global.
     name: '__blackPlugin',
     exports: 'auto',
-    globals: (id) => `__black.require(${JSON.stringify(id)})`,
+    globals: (id) => `__black.require(${JSON.stringify(id === '@black-studio/plugin' ? RUNTIME_SDK : id)})`,
     minify: true,
   })
   await bundle.close()

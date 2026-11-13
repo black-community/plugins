@@ -1,4 +1,4 @@
-import type { NodeInfo } from "@black/plugin";
+import type { NodeInfo } from "@black-studio/plugin";
 import { useEffect, useRef, useState } from "react";
 import { newLinkId } from "./links";
 import { addPin, readPins, removePin } from "./maps";

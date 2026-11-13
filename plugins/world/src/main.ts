@@ -1,5 +1,5 @@
 import { createElement } from "react";
-import { Plugin } from "@black/plugin";
+import { Plugin } from "@black-studio/plugin";
 import locales from "black:locales";
 import { translator, type Translate } from "../../../shared/i18n";
 import { KINDS, kindDefinitions, type Key } from "./kinds";

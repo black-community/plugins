@@ -7,11 +7,6 @@
     "noEmit": true,
     "skipLibCheck": true,
     "resolveJsonModule": true,
-    "paths": {
-      "@black/plugin": [
-        "./sdk/black-plugin.d.ts"
-      ]
-    },
     "types": [
       "node"
     ],
@@ -20,7 +15,6 @@
   "include": [
     "plugins",
     "shared",
-    "sdk",
     "tests"
   ]
 }

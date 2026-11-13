@@ -1,4 +1,4 @@
-import type { App, NodeInfo } from "@black/plugin";
+import type { App, NodeInfo } from "@black-studio/plugin";
 import { useEffect, useState } from "react";
 import type { Translate } from "../../../shared/i18n";
 import { KINDS, type Key } from "./kinds";

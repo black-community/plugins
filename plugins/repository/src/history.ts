@@ -50,7 +50,7 @@ export interface Texts {
   beforeSync: string;
   merged: string;
   nothingToPush: string;
-  /** Says what went wrong in a request, in the writer's words. */
+  /** Turns a failed request's error into a message for the writer. */
   describe: (err: unknown) => string;
 }
 
@@ -259,10 +259,10 @@ export type InTurn = <T>(work: () => Promise<T>) => Promise<T>;
 
 /**
  * Syncs the history with `branch` of the repository at `url`. Changes from other devices are merged in (see merge.ts), and local
- * commits are pushed. Only the merging waits its turn with commits, so a slow network never holds up saving a version.
+ * commits are pushed. Only the merge is queued with commits, so a slow network never holds up saving a version.
  */
 export async function sync(r: Repo, url: string, branch: string, label: string, texts: Texts, inTurn: InTurn): Promise<SyncResult> {
-  // Another device may push between this one fetching and pushing. Then it's only to fetch and merge again.
+  // Another device may push between this one's fetch and push. If so, fetch and merge again.
   const changed = new Set<string>()
   const conflicts = new Set<string>()
   for (let tries = 3; ; tries--) {
@@ -293,12 +293,12 @@ async function syncOnce(r: Repo, url: string, branch: string, label: string, tex
       if (!head && !remote) return { message: texts.nothingToPush, ...none };
       const isAncestor = (ancestor: string, oid: string) =>
         ancestor === oid ? Promise.resolve(true) : git.isDescendent({ ...base(r), oid, ancestor, depth: -1 }).catch(() => false);
-      // The remote branch doesn't exist yet or has nothing new, so there's nothing to take in.
+      // The remote branch doesn't exist yet or has nothing new, so there's nothing to merge.
       if (!remote || (head && (await isAncestor(remote, head)))) return { message: "", ...none };
       // The remote has new commits. Commit any uncommitted local changes first, so they can't be overwritten.
       if (head && (await stageAll(r))) head = await git.commit({ ...base(r), message: texts.beforeSync, author: author(r) });
       const branchName = (await git.currentBranch(base(r))) || "main";
-      // There are no local commits, or none the remote lacks, so move the local copy forward to the remote.
+      // There are no local commits, or none the remote lacks, so fast-forward to the remote.
       if (!head || (await isAncestor(head, remote))) {
         const paths = head ? await differ(r, head, remote) : await allFiles(r, remote);
         const theirs = await filesAt(r, remote, paths);
@@ -361,7 +361,7 @@ async function allFiles(r: Repo, oid: string) {
   return out;
 }
 
-/** Fills the folder from `branch` of the repository. Returns the files brought in. */
+/** Fills the folder from `branch` of the repository. Returns the files written. */
 export async function clone(r: Repo, url: string, branch: string) {
   await git.init({ fs: r.fs, dir: DIR, defaultBranch: branch });
   const oid = await fetchBranch(r.fs, base(r), r.http, onAuth(r), url, branch);
@@ -377,7 +377,7 @@ export async function clone(r: Repo, url: string, branch: string) {
 
 /**
  * Lists the projects in the repository at `url`. Each branch holds one, and its title is read from the branch's latest commit,
- * fetched into a repository in memory that's forgotten afterwards.
+ * fetched into a temporary in-memory repository.
  */
 export async function remoteBooks(http: HttpClient, login: () => Login, url: string): Promise<RemoteBook[]> {
   const auth = () => {
@@ -397,7 +397,7 @@ export async function remoteBooks(http: HttpClient, login: () => Login, url: str
       await fetchBranch(fs, { gitdir }, http, auth, url, branch, 1);
       const read = await git.readBlob({ fs: fs as never, gitdir, oid, filepath: "project.json" });
       const file = JSON.parse(new TextDecoder().decode(read.blob)) as { name?: string; books?: unknown };
-      // A branch from before this format, or that isn't one of the app's, isn't listed.
+      // A branch in an older format, or one the app didn't create, isn't listed.
       if (Array.isArray(file.books)) out.push({ branch, kind: file.books.length > 1 ? "series" : "book", title: file.name || branch });
     } catch (err) {
       console.warn(`Couldn’t read the book on branch ${branch}.`, err);
